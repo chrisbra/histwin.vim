@@ -2,7 +2,7 @@
 " -------------------------------------------------------------
 " Last Change: 2010, Jan 20
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.5
+" Version:     0.6
 " Copyright:   (c) 2009 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -28,9 +28,9 @@ set cpo&vim
 " per default enabled, you can change it,
 " if you set g:undobrowse_help to 0 e.g.
 " put in your .vimrc
-" :let g:undobrowse_help=0
-let s:undo_help=(exists("g:undobrowse_help") ? (g:undobrowse_help) : 
-		\(exists("s:undo_help") ? s:undo_help : 1) )"}}}
+" :let g:undo_tree_help=0
+let s:undo_help=(exists("g:undo_tree_help") ? g:undo_tree_help : 
+			\(exists("s:undo_help") ? s:undo_help : 1) )"}}}
 
 " Functions:"{{{
 fu! <sid>Init()"{{{
@@ -43,6 +43,7 @@ fu! <sid>Init()"{{{
 	if !exists("b:undo_list")
 	    let b:undo_list=[]
 	endif
+	let s:undo_tree_wdth=(exists('g:undo_tree_wdth') ? g:undo_tree_wdth : 30)
 	if bufname('') != s:undo_winname
 		"exe bufwinnr(s:orig_buffer) . 'wincmd w'
 		let s:orig_buffer = bufnr('')
@@ -51,7 +52,7 @@ fu! <sid>Init()"{{{
 endfu"}}}
 
 fu! <sid>ReturnHistList(winnr)"{{{
-    exe ':noa ' . a:winnr . ' wincmd w'
+    exe a:winnr . ' wincmd w'
 	let histlist=[]
 	redir => a
 	sil :undol
@@ -65,7 +66,7 @@ fu! <sid>ReturnHistList(winnr)"{{{
 	" check later, if this is called.
 	call add(histlist, {'change': 0, 'number': 0, 'time': '00:00:00'})
 	if empty(get(b:undo_tagdict, 0, ''))
-		let b:undo_tagdict[0]='Start of Undo-Tree'
+		let b:undo_tagdict[0]='Start Editing'
 	endif
 	for item in templist
 		let change	=  matchstr(item, '^\s\+\zs\d\+') + 0
@@ -83,27 +84,24 @@ endfu"}}}
 
 fu! <sid>HistWin()"{{{
 	let undo_buf=bufwinnr('^'.s:undo_winname.'$')
-	if !exists("s:undo_tree_wdth")
-		let s:undo_tree_wdth=40
-	endif
 	if undo_buf != -1
-		exe 'noa ' . undo_buf . 'wincmd w'
+		exe undo_buf . 'wincmd w'
 		if winwidth(0) != s:undo_tree_wdth
 			exe "vert res " . s:undo_tree_wdth
 		endif
 	else
-	execute "noa " . s:undo_tree_wdth . "vsp " . s:undo_winname
+	execute s:undo_tree_wdth . "vsp " . s:undo_winname
 	setl noswapfile buftype=nowrite bufhidden=delete foldcolumn=0 nobuflisted nospell
 	let undo_buf=bufwinnr("")
 	endif
-	exe 'noa ' . bufwinnr(s:orig_buffer) . ' wincmd w'
+	exe bufwinnr(s:orig_buffer) . ' wincmd w'
 	return undo_buf
 endfu"}}}
 
 fu! <sid>PrintUndoTree(winnr)"{{{
-	let bufname  = (empty(bufname(s:orig_buffer)) ? '[No Name]' : fnamemodify(s:orig_buffer,':t'))
+	let bufname  = (empty(bufname(s:orig_buffer)) ? '[No Name]' : fnamemodify(bufname(s:orig_buffer),':t'))
 	let changenr = changenr()
-	exe 'noa' . a:winnr . 'wincmd w'
+	exe a:winnr . 'wincmd w'
 	let save_cursor=getpos('.')
 	setl modifiable
 	" silent because :%d outputs this message:
@@ -153,11 +151,11 @@ endfu"}}}
 
 fu! <sid>PrintHelp(...)"{{{
 	if a:1
-		put =\"\\" I\t  Toggle this help window\"
+		put =\"\\" I\t  Toggle this help\"
 		put =\"\\" <Enter> goto undo branch\"
 		put =\"\\" <C-L>\t  Update view\"
 		put =\"\\" T\t  Tag sel. branch\"
-		put =\"\\" D\t  Diff with sel. undo branch\"
+		put =\"\\" D\t  Diff sel. branch\"
 		put =\"\\" R\t  Replay sel. branch\"
 		put =\"\\" Q\t  Quit window\"
 	else
@@ -167,11 +165,7 @@ fu! <sid>PrintHelp(...)"{{{
 endfu"}}}
 
 fu! <sid>DiffUndoBranch(change)"{{{
-"	exe 'noa ' . bufwinnr(s:orig_buffer) . 'wincmd w'
-"	let changenr=changenr()
-"	noa wincmd p
 	let prevchangenr=<sid>UndoBranch(a:change)
-	"exe ':u ' . b:undo_list[a:change-1]['change']
 	let buffer=getline(1,'$')
 	exe ':u ' . prevchangenr
 	let tempname=tempname()
@@ -180,10 +174,8 @@ fu! <sid>DiffUndoBranch(change)"{{{
 	call append('$',buffer)
 	silent w!
 	diffthis
-	exe 'noa ' . bufwinnr(s:orig_buffer) . 'wincmd w'
+	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 	diffthis
-"	exe 'noa ' . bufwinnr(b:undo_win)
-"	vertical res 40
 endfu"}}}
 
 fu! <sid>GetCurrentState(changenr,histlist)"{{{
@@ -198,8 +190,7 @@ fu! <sid>GetCurrentState(changenr,histlist)"{{{
 endfu!"}}}
 
 fu! <sid>ReplayUndoBranch(change)"{{{
-	"noa wincmd p
-	exe 'noa ' . bufwinnr(s:orig_buffer) . ' wincmd w'
+	exe bufwinnr(s:orig_buffer) . ' wincmd w'
 	let end=b:undo_list[a:change-1]['number']
 	exe ':u ' . b:undo_list[a:change-1]['change']
 	exe 'normal ' . end . 'u' 
@@ -219,8 +210,7 @@ endfu"}}}
 
 fu! <sid>ToggleHelpScreen()"{{{
 	let s:undo_help=!s:undo_help
-	"noa wincmd p
-	exe 'noa ' . bufwinnr(s:orig_buffer) . ' wincmd w'
+	exe bufwinnr(s:orig_buffer) . ' wincmd w'
 	call <sid>PrintUndoTree(<sid>HistWin())
 endfu"}}}
 
@@ -231,13 +221,11 @@ fu! <sid>UndoBranchTag(change)"{{{
 	call inputrestore()
 	let tagdict[a:change-1] = tag
 	call setbufvar('#', 'undo_tagdict', tagdict)
-	"noa wincmd p
-	"exe 'noa ' . bufwinnr(s:orig_buffer) . ' wincmd w'
 	call <sid>PrintUndoTree(<sid>HistWin())
 endfu"}}}
 
 fu! <sid>UndoBranch(change)"{{{
-	exe 'noa ' . bufwinnr(s:orig_buffer) . 'wincmd w'
+	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 	let cmd=''
 	let cur_changenr=changenr()
 	if a:change <= len(b:undo_list)
@@ -276,6 +264,9 @@ com! -nargs=0 UB :call <sid>UndoBrowse()
 "}}}
 
 " ChangeLog:
+" 0.6     - fix missing bufname() when creating the undo_tree window
+"		  - make undo_tree window a little bit smaller
+"		    (size is adjustable via g:undo_tree_wdth variable)
 " 0.5     - add missing endif (which made version 0.4 unusuable)
 " 0.4     - Allow diffing with selected branch
 "         - highlight current version

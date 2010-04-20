@@ -2,7 +2,7 @@
 " -------------------------------------------------------------
 " Last Change: 2010, Jan 20
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.7.1
+" Version:     0.7.2
 " Copyright:   (c) 2009 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -16,7 +16,7 @@
 "         appropriate syntax highlighting rules
 
 " Init:
-if exists("g:loaded_undo_browse") || &cp
+if exists("g:loaded_undo_browse") || &cp || &ul == -1
   finish
 endif
 
@@ -32,6 +32,8 @@ else
 endif
 
 " ChangeLog:
+" 0.7.2   - make sure, when switching to a different undo-branch, the undo-tree will be reloaded
+"         - check 'undolevel' settings  
 " 0.7.1   - fixed a problem with mapping the keys which broke the Undo-Tree keys
 "           (I guess I don't fully understand, when to use s: and <sid>)
 " 0.7     - created autoloadPlugin (patch by Charles Campbell) Thanks!

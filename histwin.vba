@@ -2,12 +2,12 @@
 UseVimball
 finish
 autoload/histwin.vim	[[[1
-258
+262
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
 " Last Change: 2010, Jan 20
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.7.1
+" Version:     0.7.2
 " Copyright:   (c) 2009 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -242,7 +242,7 @@ endfun
 fun! s:MapKeys()
 	"noremap <script> <buffer> <expr> <CR> s:UndoBranch(s:ReturnBranch())
 	noremap <script> <buffer> I     :<C-U>silent                                      :call <sid>ToggleHelpScreen()<CR>
-	noremap <script> <buffer> <CR>  :<C-U>silent                                      :call <sid>UndoBranch(<sid>ReturnBranch())<CR>       :call histwin#UndoBrowse()<CR>
+	noremap <script> <buffer> <CR>  :<C-U>silent                                      :call <sid>UndoBranch(<sid>ReturnBranch())<CR>:call histwin#UndoBrowse()<CR>
 	noremap <script> <buffer> T     :call <sid>UndoBranchTag(<sid>ReturnBranch())<CR>
 	noremap <script> <buffer> D     :<C-U>silent                                      :call <sid>DiffUndoBranch(<sid>ReturnBranch())<CR>
 	noremap <script> <buffer> <C-L> :<C-U>silent                                      :call histwin#UndoBrowse()<CR>
@@ -251,10 +251,14 @@ fun! s:MapKeys()
 endfun 
 
 fun! histwin#UndoBrowse()
-	call s:Init()
-	let b:undo_win  = s:HistWin()
-	let b:undo_list = s:ReturnHistList(bufwinnr(s:orig_buffer))
-	call s:PrintUndoTree(b:undo_win)
+	if &ul != -1
+		call s:Init()
+		let b:undo_win  = s:HistWin()
+		let b:undo_list = s:ReturnHistList(bufwinnr(s:orig_buffer))
+		call s:PrintUndoTree(b:undo_win)
+	else
+		echoerr "Undo has been disabled. Check your undolevel setting!"
+	endif
 endfun 
 
 " Restore:
@@ -262,12 +266,12 @@ let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" spell spelllang=en fdm=syntax
 plugin/histwinPlugin.vim	[[[1
-61
+63
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
 " Last Change: 2010, Jan 20
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.7.1
+" Version:     0.7.2
 " Copyright:   (c) 2009 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -281,7 +285,7 @@ plugin/histwinPlugin.vim	[[[1
 "         appropriate syntax highlighting rules
 
 " Init:
-if exists("g:loaded_undo_browse") || &cp
+if exists("g:loaded_undo_browse") || &cp || &ul == -1
   finish
 endif
 
@@ -297,6 +301,8 @@ else
 endif
 
 " ChangeLog:
+" 0.7.2   - make sure, when switching to a different undo-branch, the undo-tree will be reloaded
+"         - check 'undolevel' settings  
 " 0.7.1   - fixed a problem with mapping the keys which broke the Undo-Tree keys
 "           (I guess I don't fully understand, when to use s: and <sid>)
 " 0.7     - created autoloadPlugin (patch by Charles Campbell) Thanks!

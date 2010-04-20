@@ -2,7 +2,7 @@
 " -------------------------------------------------------------
 " Last Change: 2010, Jan 20
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.7.1
+" Version:     0.7.2
 " Copyright:   (c) 2009 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -237,7 +237,7 @@ endfun
 fun! s:MapKeys()
 	"noremap <script> <buffer> <expr> <CR> s:UndoBranch(s:ReturnBranch())
 	noremap <script> <buffer> I     :<C-U>silent                                      :call <sid>ToggleHelpScreen()<CR>
-	noremap <script> <buffer> <CR>  :<C-U>silent                                      :call <sid>UndoBranch(<sid>ReturnBranch())<CR>       :call histwin#UndoBrowse()<CR>
+	noremap <script> <buffer> <CR>  :<C-U>silent                                      :call <sid>UndoBranch(<sid>ReturnBranch())<CR>:call histwin#UndoBrowse()<CR>
 	noremap <script> <buffer> T     :call <sid>UndoBranchTag(<sid>ReturnBranch())<CR>
 	noremap <script> <buffer> D     :<C-U>silent                                      :call <sid>DiffUndoBranch(<sid>ReturnBranch())<CR>
 	noremap <script> <buffer> <C-L> :<C-U>silent                                      :call histwin#UndoBrowse()<CR>
@@ -246,10 +246,14 @@ fun! s:MapKeys()
 endfun 
 
 fun! histwin#UndoBrowse()
-	call s:Init()
-	let b:undo_win  = s:HistWin()
-	let b:undo_list = s:ReturnHistList(bufwinnr(s:orig_buffer))
-	call s:PrintUndoTree(b:undo_win)
+	if &ul != -1
+		call s:Init()
+		let b:undo_win  = s:HistWin()
+		let b:undo_list = s:ReturnHistList(bufwinnr(s:orig_buffer))
+		call s:PrintUndoTree(b:undo_win)
+	else
+		echoerr "Undo has been disabled. Check your undolevel setting!"
+	endif
 endfun 
 
 " Restore:

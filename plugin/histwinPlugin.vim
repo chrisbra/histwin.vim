@@ -2,7 +2,7 @@
 " -------------------------------------------------------------
 " Last Change: 2010, Jan 20
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.7
+" Version:     0.7.1
 " Copyright:   (c) 2009 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -32,6 +32,8 @@ else
 endif
 
 " ChangeLog:
+" 0.7.1   - fixed a problem with mapping the keys which broke the Undo-Tree keys
+"           (I guess I don't fully understand, when to use s: and <sid>)
 " 0.7     - created autoloadPlugin (patch by Charles Campbell) Thanks!
 "         - enabled GLVS (patch by Charles Campbell) Thanks!
 "         - cleaned up old comments

@@ -2,7 +2,7 @@
 " -------------------------------------------------------------
 " Last Change: 2010, Jan 20
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.7
+" Version:     0.7.1
 " Copyright:   (c) 2009 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -236,12 +236,12 @@ endfun
 
 fun! s:MapKeys()
 	"noremap <script> <buffer> <expr> <CR> s:UndoBranch(s:ReturnBranch())
-	noremap <script> <buffer> I     :<C-U>silent                                      :call s:ToggleHelpScreen()<CR>
-	noremap <script> <buffer> <CR>  :<C-U>silent                                      :call s:UndoBranch(s:ReturnBranch())<CR>       :call histwin#UndoBrowse()<CR>
+	noremap <script> <buffer> I     :<C-U>silent                                      :call <sid>ToggleHelpScreen()<CR>
+	noremap <script> <buffer> <CR>  :<C-U>silent                                      :call <sid>UndoBranch(<sid>ReturnBranch())<CR>       :call histwin#UndoBrowse()<CR>
 	noremap <script> <buffer> T     :call <sid>UndoBranchTag(<sid>ReturnBranch())<CR>
-	noremap <script> <buffer> D     :<C-U>silent                                      :call s:DiffUndoBranch(s:ReturnBranch())<CR>
+	noremap <script> <buffer> D     :<C-U>silent                                      :call <sid>DiffUndoBranch(<sid>ReturnBranch())<CR>
 	noremap <script> <buffer> <C-L> :<C-U>silent                                      :call histwin#UndoBrowse()<CR>
-	noremap <script> <buffer> R     :<C-U>silent                                      :call s:ReplayUndoBranch(s:ReturnBranch())<CR>
+	noremap <script> <buffer> R     :<C-U>silent                                      :call <sid>ReplayUndoBranch(<sid>ReturnBranch())<CR>
 	noremap <script> <buffer> Q     :<C-U>q<CR>
 endfun 
 

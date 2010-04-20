@@ -2,12 +2,12 @@
 UseVimball
 finish
 autoload/histwin.vim	[[[1
-262
+294
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: 2010, Jan 20
+" Last Change: 2010, Jan 21
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.7.2
+" Version:     0.8
 " Copyright:   (c) 2009 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -15,7 +15,7 @@ autoload/histwin.vim	[[[1
 "              No warranty, express or implied.
 "    *** ***   Use At-Your-Own-Risk!   *** ***
 "
-" TODO: "       - write documentation
+" TODO: - write documentation
 "       - don't use matchadd for syntax highlighting but use
 "         appropriate syntax highlighting rules
 
@@ -28,30 +28,41 @@ set cpo&vim
 " if you set g:undobrowse_help to 0 e.g.
 " put in your .vimrc
 " :let g:undo_tree_help=0
-let s:undo_help=(exists("g:undo_tree_help") ? g:undo_tree_help : 
-			\(exists("s:undo_help") ? s:undo_help : 1) )"}}}
+let s:undo_help=((exists("s:undo_help") ? s:undo_help : 1) )"}}}
 
 " Functions:
 fun! s:Init()
+	if exists("g:undo_tree_help")
+	   let s:undo_help=g:undo_tree_help
+	endif
 	if !exists("s:undo_winname")
 		let s:undo_winname='Undo_Tree'
 	endif
+	" speed, with which the replay will be played
+	" (duration between each change in milliseconds)
+	" set :let g:undo_tree_speed=250 in your .vimrc to override
+	let s:undo_tree_speed=(exists('g:undo_tree_speed') ? g:undo_tree_speed : 100)
+	let s:undo_tree_wdth=(exists('g:undo_tree_wdth') ? g:undo_tree_wdth : 30)
+	if bufname('') != s:undo_winname
+		let s:orig_buffer = bufnr('')
+	endif
+	" Make sure we are in the right buffer
+	" and this window still exists
+	if bufwinnr(s:orig_buffer) == -1
+		wincmd p
+		let s:orig_buffer=bufnr('')
+	endif
+	exe bufwinnr(s:orig_buffer) . 'wincmd w'
+	" Move to the buffer, we are monitoring
 	if !exists("b:undo_tagdict")
 		let b:undo_tagdict={}
 	endif
 	if !exists("b:undo_list")
 	    let b:undo_list=[]
 	endif
-	let s:undo_tree_wdth=(exists('g:undo_tree_wdth') ? g:undo_tree_wdth : 30)
-	if bufname('') != s:undo_winname
-		"exe bufwinnr(s:orig_buffer) . 'wincmd w'
-		let s:orig_buffer = bufnr('')
-	endif
-	"let s:orig_buffer = bufname('')
 endfun 
 
 fun! s:ReturnHistList(winnr)
-    exe a:winnr . ' wincmd w'
 	let histlist=[]
 	redir => a
 	sil :undol
@@ -63,19 +74,22 @@ fun! s:ReturnHistList(winnr)
 	" easy way to obtain the state of the first change,
 	" so we will be inserting a dummy entry and need to
 	" check later, if this is called.
-	call add(histlist, {'change': 0, 'number': 0, 'time': '00:00:00'})
-	if empty(get(b:undo_tagdict, 0, ''))
+	if exists("b:undo_list") && !empty(get(b:undo_list,0,''))
+		call add(histlist, b:undo_list[0])
+	else
+		call add(histlist, {'change': 0, 'number': 0, 'time': '00:00:00'})
+	endif
+	if empty(get(b:undo_tagdict, 0,''))
 		let b:undo_tagdict[0]='Start Editing'
 	endif
 	for item in templist
 		let change	=  matchstr(item, '^\s\+\zs\d\+') + 0
-		"let change  =  changenr()
 		let nr		=  matchstr(item, '^\s\+\d\+\s\+\zs\d\+') + 0
 		let time	=  matchstr(item, '^\%(\s\+\d\+\)\{2}\s\+\zs.*$')
-	if time !~ '\d\d:\d\d:\d\d'
-	   let time=matchstr(time, '^\d\+')
-	   let time=strftime('%H:%M:%S', localtime()-time)
-	endif
+		if time !~ '\d\d:\d\d:\d\d'
+		   let time=matchstr(time, '^\d\+')
+		   let time=strftime('%H:%M:%S', localtime()-time)
+		endif
 	   call add(histlist, {'change': change, 'number': nr, 'time': time})
 	endfor
 	return histlist
@@ -112,7 +126,7 @@ fun! s:PrintUndoTree(winnr)
 	put =repeat('=', strlen(getline(1)))
 	put =''
 	call s:PrintHelp(s:undo_help)
-	call append('$', printf("%s %-9s %s", "Nr", "  Time", "Tag"))
+	call append('$', printf("%-*s %-9s %s", strlen(len(histlist)), "Nr", "  Time", "Tag"))
 	let i=1
 	for line in histlist
 		let tag = get(tagdict, i-1, '')
@@ -126,7 +140,7 @@ fun! s:PrintUndoTree(winnr)
 	call s:MapKeys()
 	call s:HilightLines(s:GetCurrentState(changenr,histlist)+1)
 	setl nomodifiable
-	let ret=setpos('.', save_cursor)
+	call setpos('.', save_cursor)
 endfun 
 
 fun! s:HilightLines(changenr)
@@ -140,36 +154,39 @@ fun! s:HilightLines(changenr)
 	if hlexists("Comment")		| 	call matchadd('Comment', '^".*$')					|	endif
 	if hlexists("Identifier")	| 	call matchadd('Identifier', '^\d\+\ze)')			|	endif
 	if hlexists("Special")		| 	call matchadd('Special', '/\zs.*\ze/$')				|	endif
-	if hlexists("Ignore")		| 	call matchadd('Ignore', '/$')						|	endif
-	if hlexists("Ignore")		| 	call matchadd('Ignore', '/\ze.*/$')					|	endif
 	if hlexists("Underlined")	| 	call matchadd('Underlined', '^\d\+)\s\+\zs\S\+')	|	endif
+	if hlexists("Ignore")		
+		call matchadd('Ignore', '/$')
+		call matchadd('Ignore', '/\ze.*/$')					
+	endif
 	if a:changenr 
-		if hlexists("PmenuSel") | 	call matchadd('PmenuSel', '^0*'.a:changenr.')[^/]*')| endif
+		if hlexists("PmenuSel") | 	call matchadd('PmenuSel', '^0*'.a:changenr.')[^/]*')|	endif
 	endif
 endfun 
 
 fun! s:PrintHelp(...)
+	let mess=['" actv. keys in this window']
+	call add(mess, '" I toggles help screen')
 	if a:1
-		put =\"\\" I\t  Toggle this help\"
-		put =\"\\" <Enter> goto undo branch\"
-		put =\"\\" <C-L>\t  Update view\"
-		put =\"\\" T\t  Tag sel. branch\"
-		put =\"\\" D\t  Diff sel. branch\"
-		put =\"\\" R\t  Replay sel. branch\"
-		put =\"\\" Q\t  Quit window\"
-	else
-		put =\"\\" I\t Toggle help screen\"
+		call add(mess, "\" <Enter> goto undo branch")
+		call add(mess, "\" <C-L>\t  Update view")
+		call add(mess, "\" T\t  Tag sel. branch")
+		call add(mess, "\" D\t  Diff sel. branch")
+		call add(mess, "\" R\t  Replay sel. branch")
+		call add(mess, "\" Q\t  Quit window")
+		call add(mess, '"')
+		call add(mess, "\" Undo-Tree, v" . string(g:loaded_undo_browse))
 	endif
-	put =''
+	call add(mess, '')
+	call append('$', mess)
 endfun 
 
 fun! s:DiffUndoBranch(change)
 	let prevchangenr=<sid>UndoBranch(a:change)
 	let buffer=getline(1,'$')
 	exe ':u ' . prevchangenr
-	let tempname=tempname()
-	exe ':vsp '.tempname
-	call setline(1, s:orig_buffer . ' branch ' . a:change)
+	exe ':botright vsp '.tempname()
+	call setline(1, bufname(s:orig_buffer) . ' undo-branch: ' . a:change)
 	call append('$',buffer)
 	silent w!
 	diffthis
@@ -198,7 +215,7 @@ fun! s:ReplayUndoBranch(change)
 	while start <= end
 	red
 	redraw
-	sleep 100m
+	exe ':sleep ' . s:undo_tree_speed . 'm'
 	let start+=1
 	endw
 endfun 
@@ -225,28 +242,43 @@ endfun
 
 fun! s:UndoBranch(change)
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
+	" Save cursor pos
+	let cpos = getpos('.')
 	let cmd=''
 	let cur_changenr=changenr()
-	if a:change <= len(b:undo_list)
+	let len = len(b:undo_list)
+	" if len==1, then there is no
+	" undo branch available, which means
+	" we can't undo anyway
+	if a:change <= len && len >1
 		if a:change<=1
 		   " Jump back to initial state
-			let cmd=':earlier 9999999'
+			"let cmd=':earlier 9999999'
+			let change = b:undo_list[a:change]['change']
+			let steps  = b:undo_list[a:change]['number']
+			exe ':u ' . change 
+			exe ':norm' . steps . 'u'
+			" probably not needed
+			let b:undo_list[a:change-1]['change']=changenr()
 		else
-			let cmd=':u '.b:undo_list[a:change-1]['change']
+			exe ':u '.b:undo_list[a:change-1]['change']
 		endif
-			exe cmd
 	endif
+	" this might have changed, so we return to the old cursor
+	" position. This could still be wrong, so
+	" So this is our best effort approach.
+	call setpos('.', cpos)
 	return cur_changenr
 endfun 
 
 fun! s:MapKeys()
-	"noremap <script> <buffer> <expr> <CR> s:UndoBranch(s:ReturnBranch())
-	noremap <script> <buffer> I     :<C-U>silent                                      :call <sid>ToggleHelpScreen()<CR>
-	noremap <script> <buffer> <CR>  :<C-U>silent                                      :call <sid>UndoBranch(<sid>ReturnBranch())<CR>:call histwin#UndoBrowse()<CR>
+	noremap <script> <buffer> I     :<C-U>silent :call <sid>ToggleHelpScreen()<CR>
+	noremap <script> <buffer> <CR>  :<C-U>silent :call <sid>UndoBranch(<sid>ReturnBranch())<CR>:call histwin#UndoBrowse()<CR>
 	noremap <script> <buffer> T     :call <sid>UndoBranchTag(<sid>ReturnBranch())<CR>
-	noremap <script> <buffer> D     :<C-U>silent                                      :call <sid>DiffUndoBranch(<sid>ReturnBranch())<CR>
-	noremap <script> <buffer> <C-L> :<C-U>silent                                      :call histwin#UndoBrowse()<CR>
-	noremap <script> <buffer> R     :<C-U>silent                                      :call <sid>ReplayUndoBranch(<sid>ReturnBranch())<CR>
+	noremap <script> <buffer> D     :<C-U>silent :call <sid>DiffUndoBranch(<sid>ReturnBranch())<CR>
+	noremap <script> <buffer> <C-L> :<C-U>silent :call histwin#UndoBrowse()<CR>
+	noremap <script> <buffer> R     :<C-U>silent :call <sid>ReplayUndoBranch(<sid>ReturnBranch())<CR>
+	"noremap <script> <buffer> B     :call <sid>CreateNewBranch()<CR>
 	noremap <script> <buffer> Q     :<C-U>q<CR>
 endfun 
 
@@ -266,12 +298,12 @@ let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" spell spelllang=en fdm=syntax
 plugin/histwinPlugin.vim	[[[1
-63
+66
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: 2010, Jan 20
+" Last Change: 2010, Jan 21
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.7.2
+" Version:     0.8
 " Copyright:   (c) 2009 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -279,7 +311,7 @@ plugin/histwinPlugin.vim	[[[1
 "              No warranty, express or implied.
 "    *** ***   Use At-Your-Own-Risk!   *** ***
 "
-" GetLatestVimScripts: 2932 1 :AutoInstall: histwin.vim
+" GetLatestVimScripts: 2932 2 :AutoInstall: histwin.vim
 " TODO: - write documentation
 "       - don't use matchadd for syntax highlighting but use
 "         appropriate syntax highlighting rules
@@ -289,7 +321,7 @@ if exists("g:loaded_undo_browse") || &cp || &ul == -1
   finish
 endif
 
-let g:loaded_undo_browse = 1
+let g:loaded_undo_browse = 0.8
 let s:cpo                = &cpo
 set cpo&vim
 
@@ -301,6 +333,9 @@ else
 endif
 
 " ChangeLog:
+" 0.8     - code cleanup
+"         - make speed of the replay adjustable. Use g:undo_tree_speed to set
+"           time in milliseconds
 " 0.7.2   - make sure, when switching to a different undo-branch, the undo-tree will be reloaded
 "         - check 'undolevel' settings  
 " 0.7.1   - fixed a problem with mapping the keys which broke the Undo-Tree keys

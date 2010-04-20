@@ -1,7 +1,8 @@
-*histwin.txt*  Plugin to browse the undo-tree          - Vers 0.9  Jan 27, 2009
+*histwin.txt*  Plugin to browse the undo-tree
 
+Version: 0.10 Tue, 20 Apr 2010 23:04:31 +0200
 Author:  Christian Brabandt <cb@256bit.org>
-Copyright: (c) 2009 by Christian Brabandt 		    *histwin-copyright*
+Copyright: (c) 2009, 2010 by Christian Brabandt		    *histwin-copyright*
            The VIM LICENSE applies to histwin.vim and histwin.txt
            (see |copyright|) except use histwin instead of "Vim".
 	   NO WARRANTY, EXPRESS OR IMPLIED.  USE AT-YOUR-OWN-RISK.
@@ -167,6 +168,12 @@ look like |IncSerch|, so you can do this in your .vimrc file:
 5. histwin History
 
 
+0.10    - Fixed annoying Resizing bug
+        - linebreak tags, if they are too long
+	- dynamically grow the histwin window, for longer tags (up
+	  to a maximum)
+	- Bugfix: Always indicate the correct branch
+        - Added a few try/catch statements and some error handling
 0.9     - Error handling for Replaying (it may not work always)
         - Documentation
         - Use syntax highlighting

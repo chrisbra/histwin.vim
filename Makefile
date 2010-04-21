@@ -14,7 +14,7 @@ clean:
 	rm -rf *.vba */*.orig *.~* .VimballRecord doc/tags
 
 install:
-	vim -N -c':so' -c':q!' ${PLUGIN}.vba
+	vim -N -c':so %' -c':q!' ${PLUGIN}.vba
 
 uninstall:
 	vim -N -c':RmVimball ${PLUGIN}.vba'

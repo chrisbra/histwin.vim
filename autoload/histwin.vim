@@ -1,9 +1,8 @@
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Tue, 20 Apr 2010 23:04:31 +0200
-
+" Last Change: Wed, 21 Apr 2010 21:22:44 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.10
+" Version:     0.11
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -11,9 +10,8 @@
 "              No warranty, express or implied.
 "    *** ***   Use At-Your-Own-Risk!   *** ***
 "
-" TODO: - Fix more bugs (?)
 
-" Init:
+" Init: {{{1
 let s:cpo= &cpo
 set cpo&vim
 
@@ -22,11 +20,26 @@ set cpo&vim
 " if you set g:undobrowse_help to 0 e.g.
 " put in your .vimrc
 " :let g:undo_tree_help=0
-let s:undo_help=((exists("s:undo_help") ? s:undo_help : 1) )"}}}
-let s:undo_tree_dtl   = (exists('g:undo_tree_dtl')   ? g:undo_tree_dtl   :   1)
+let s:undo_help=((exists("s:undo_help") ? s:undo_help : 1) )
+let s:undo_tree_dtl   = (exists('g:undo_tree_dtl')   ? g:undo_tree_dtl   :   (exists("s:undo_tree_dtl") ? s:undo_tree_dtl : 1))
+
+
 
 " Functions:
-fun! s:Init()"{{{
+" 
+fun! s:WarningMsg(msg)"{{{1
+	echohl WarningMsg
+	let msg = "histwin: " . a:msg
+	if exists(":unsilent") == 2
+		unsilent echomsg msg
+	else
+		echomsg msg
+	endif
+	echohl Normal
+	let v:errmsg = msg
+endfun "}}}
+
+fun! s:Init()"{{{1
 	if exists("g:undo_tree_help")
 	   let s:undo_help=g:undo_tree_help
 	endif
@@ -37,8 +50,12 @@ fun! s:Init()"{{{
 	" (duration between each change in milliseconds)
 	" set :let g:undo_tree_speed=250 in your .vimrc to override
 	let s:undo_tree_speed = (exists('g:undo_tree_speed') ? g:undo_tree_speed : 100)
+	" Set prefered width
 	let s:undo_tree_wdth  = (exists('g:undo_tree_wdth')  ? g:undo_tree_wdth  :  30)
+	" Show detail with Change nr?
 	let s:undo_tree_dtl   = (exists('g:undo_tree_dtl')   ? g:undo_tree_dtl   :  s:undo_tree_dtl)
+	" Set old versions nomodifiable
+	let s:undo_tree_nomod = (exists('g:undo_tree_nomod') ? g:undo_tree_nomod :   1)
 
 	if !exists("s:undo_tree_wdth_orig")
 		let s:undo_tree_wdth_orig = s:undo_tree_wdth
@@ -68,7 +85,7 @@ fun! s:Init()"{{{
 	endif
 endfun "}}}
 
-fun! s:ReturnHistList(winnr)"{{{
+fun! s:ReturnHistList(winnr)"{{{1
 	redir => a
 	sil :undol
 	redir end
@@ -110,11 +127,11 @@ fun! s:ReturnHistList(winnr)"{{{
 	return extend(histdict,customtags,"force")
 endfun "}}}
 
-fun! s:SortValues(a,b)"{{{
+fun! s:SortValues(a,b)"{{{1
 	return (a:a.change+0)==(a:b.change+0) ? 0 : (a:a.change+0) > (a:b.change+0) ? 1 : -1
 endfun"}}}
 
-fun! s:MaxTagsLen()"{{{
+fun! s:MaxTagsLen()"{{{1
 	let tags = getbufvar(s:orig_buffer, 'undo_customtags')
 	let d=[]
 	" return a list of all tags
@@ -125,7 +142,7 @@ fun! s:MaxTagsLen()"{{{
 	return max(d)
 endfu "}}}
 
-fun! s:HistWin()"{{{
+fun! s:HistWin()"{{{1
 	let undo_buf=bufwinnr('^'.s:undo_winname.'$')
 	" Adjust size so that each tag will fit on the screen
 	" 16 is just the default length, that should fit within 30 chars
@@ -165,7 +182,7 @@ fun! s:HistWin()"{{{
 	return undo_buf
 endfun "}}}
 
-fun! s:PrintUndoTree(winnr)"{{{
+fun! s:PrintUndoTree(winnr)"{{{1
 	let bufname     = (empty(bufname(s:orig_buffer)) ? '[No Name]' : fnamemodify(bufname(s:orig_buffer),':t'))
 	let changenr    = changenr()
 	let histdict    = b:undo_tagdict
@@ -217,7 +234,7 @@ fun! s:PrintUndoTree(winnr)"{{{
 	call setpos('.', save_cursor)
 endfun "}}}
 
-fun! s:HilightLines(changenr)"{{{
+fun! s:HilightLines(changenr)"{{{1
 	syn match UBTitle      '^\%1lUndo-Tree: \zs.*$'
 	syn match UBInfo       '^".*$'
 	syn match UBList       '^\d\+\ze'
@@ -236,7 +253,7 @@ fun! s:HilightLines(changenr)"{{{
 	hi def link UBActive		 PmenuSel
 endfun "}}}
 
-fun! s:PrintHelp(...)"{{{
+fun! s:PrintHelp(...)"{{{1
 	let mess=['" actv. keys in this window']
 	call add(mess, '" I toggles help screen')
 	if a:1
@@ -255,34 +272,40 @@ fun! s:PrintHelp(...)"{{{
 	call append('$', mess)
 endfun "}}}
 
-fun! s:DiffUndoBranch(change)"{{{
+fun! s:DiffUndoBranch(change)"{{{1
 	let prevchangenr=<sid>UndoBranch()
+	if empty(prevchangenr)
+		return ''
+	endif
+	let cur_ft = &ft
 	let buffer=getline(1,'$')
 	try
 		exe ':u ' . prevchangenr
 	catch /Vim(undo):Undo number \d\+ not found/
-	    echohl WarningMsg | echo "Undo Change not found." |echohl Normal
+		call s:WarningMsg("Undo Change not found!")
+	    "echohl WarningMsg | unsilent echo "Undo Change not found." |echohl Normal
 		return ''
 	endtry
 	exe ':botright vsp '.tempname()
 	call setline(1, bufname(s:orig_buffer) . ' undo-branch: ' . a:change)
 	call append('$',buffer)
+    exe "setl ft=".cur_ft
 	silent w!
 	diffthis
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 	diffthis
 endfun "}}}
 
-fun! s:ReturnTime()"{{{
+fun! s:ReturnTime()"{{{1
 	let a=matchstr(getline('.'),'^\d\+)\s\+\zs\d\d:\d\d:\d\d\ze\s')
-	if !a
+	if a == -1
 		call search('^\d\+)', 'b')
 		let a=matchstr(getline('.'),'^\d\+)\s\+\zs\d\d:\d\d:\d\d\ze\s')
 	endif
 	return a
 endfun"}}}
 
-fun! s:ReturnItem(time, histdict)"{{{
+fun! s:ReturnItem(time, histdict)"{{{1
 	for [key, item] in items(a:histdict)
 		if item['time'] == a:time
 			return key
@@ -291,7 +314,7 @@ fun! s:ReturnItem(time, histdict)"{{{
 	return ''
 endfun"}}}
 
-fun! s:GetLineNr(changenr,list)"{{{
+fun! s:GetLineNr(changenr,list)"{{{1
 	let i=0
 	for item in a:list
 	    if item['change'] >= a:changenr
@@ -302,7 +325,7 @@ fun! s:GetLineNr(changenr,list)"{{{
 	return -1
 endfun!"}}}
 
-fun! s:ReplayUndoBranch()"{{{
+fun! s:ReplayUndoBranch()"{{{1
 	let time	   =  s:ReturnTime()
 	exe bufwinnr(s:orig_buffer) . ' wincmd w'
 	let change_old = changenr()
@@ -323,34 +346,36 @@ fun! s:ReplayUndoBranch()"{{{
 	"catch /Undo number \d\+ not found/
 	catch /Vim(undo):Undo number 0 not found/
 		exe ':u ' . change_old
-	    echohl WarningMsg | echo "Replay not possible for initial state" |echohl Normal
+	    call s:WarningMsg("Replay not possible for initial state")
+	    "echohl WarningMsg | echo "Replay not possible for initial state" |echohl Normal
 	catch /Vim(undo):Undo number \d\+ not found/
 		exe ':u ' . change_old
-	    echohl WarningMsg | echo "Replay not possible\nDid you reload the file?" |echohl Normal
+	    call s:WarningMsg("Replay not possible\nDid you reload the file?")
+	    "echohl WarningMsg | echo "Replay not possible\nDid you reload the file?" |echohl Normal
 	endtry
 endfun "}}}
 
-fun! s:ReturnBranch()"{{{
+fun! s:ReturnBranch()"{{{1
 	let a=matchstr(getline('.'), '^\d\+\ze')+0
-	if !a
+	if a == -1
 		call search('^\d\+)', 'b')
 		let a=matchstr(getline('.'), '^\d\+\ze')+0
 	endif
 	return a
 endfun "}}}
 
-fun! s:ToggleHelpScreen()"{{{
+fun! s:ToggleHelpScreen()"{{{1
 	let s:undo_help=!s:undo_help
 	exe bufwinnr(s:orig_buffer) . ' wincmd w'
 	call s:PrintUndoTree(s:HistWin())
 endfun "}}}
 
-fun! s:ToggleDetail()"{{{
+fun! s:ToggleDetail()"{{{1
 	let s:undo_tree_dtl=!s:undo_tree_dtl
 	call s:PrintUndoTree(s:HistWin())
 endfun "}}}
 
-fun! s:UndoBranchTag(change, time)"{{{
+fun! s:UndoBranchTag(change, time)"{{{1
 ""	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 "	let changenr=changenr()
 "    exe b:undo_win . 'wincmd w'
@@ -373,11 +398,17 @@ fun! s:UndoBranchTag(change, time)"{{{
 	call s:PrintUndoTree(s:HistWin())
 endfun "}}}
 
-fun! s:UndoBranch()"{{{
+fun! s:UndoBranch()"{{{1
 	let dict			 =	 getbufvar(s:orig_buffer, 'undo_tagdict')
 	let key=s:ReturnItem(s:ReturnTime(),dict)
 	if empty(key)
 		echo "Nothing to do"
+	endif
+	" Last line?
+	if line('.') == line('$')
+		let tmod = 0
+	else
+		let tmod = 1
 	endif
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 	" Save cursor pos
@@ -394,14 +425,23 @@ fun! s:UndoBranch()"{{{
 		   " Jump back to initial state
 			"let cmd=':earlier 9999999'
 			:u1 
+			if !&modifiable
+				setl modifiable
+			endif
 			:norm 1u
 		else
 			exe ':u '.dict[key]['change']
 		endif
+		if s:undo_tree_nomod && tmod
+			setl nomodifiable
+		else
+			setl modifiable
+		endif
 	catch /Vim(undo):Undo number \d\+ not found/
 		exe ':u ' . cur_changenr
-	    echohl WarningMsg | echomsg "Undo Change not found." |echohl Normal
-		return cur_changenr
+	    call s:WarningMsg("Undo Change not found.")
+	    "echohl WarningMsg | echomsg "Undo Change not found." |echohl Normal
+		return 
 	endtry
 	" this might have changed, so we return to the old cursor
 	" position. This could still be wrong, so
@@ -410,7 +450,7 @@ fun! s:UndoBranch()"{{{
 	return cur_changenr
 endfun "}}}
 
-fun! s:MapKeys()"{{{
+fun! s:MapKeys()"{{{1
 	nnoremap <script> <silent> <buffer> I     :<C-U>silent :call <sid>ToggleHelpScreen()<CR>
 	nnoremap <script> <silent> <buffer> <C-L> :<C-U>silent :call histwin#UndoBrowse()<CR>
 	nnoremap <script> <silent> <buffer> <CR>  :<C-U>silent :call <sid>UndoBranch()<CR>:call histwin#UndoBrowse()<CR>
@@ -422,12 +462,12 @@ fun! s:MapKeys()"{{{
 	nmap	 <script> <silent> <buffer> C     :call <sid>ClearTags()<CR><C-L>
 endfun "}}}
 
-fun! s:ClearTags()"{{{
+fun! s:ClearTags()"{{{1
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 	let b:undo_customtags={}
 endfun"}}}
 
-fun! histwin#UndoBrowse()"{{{
+fun! histwin#UndoBrowse()"{{{1
 	if &ul != -1
 		call s:Init()
 		let b:undo_win  = s:HistWin()
@@ -438,7 +478,7 @@ fun! histwin#UndoBrowse()"{{{
 	endif
 endfun "}}}
 
-" Restore:
+" Restore: {{{1
 let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\"

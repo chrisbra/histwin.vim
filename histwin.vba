@@ -5,9 +5,9 @@ plugin/histwinPlugin.vim	[[[1
 40
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Wed, 21 Apr 2010 21:22:44 +0200
+" Last Change: Tue, 04 May 2010 22:42:22 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.11
+" Version:     0.12
 " Copyright:   (c) 2009 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -15,7 +15,7 @@ plugin/histwinPlugin.vim	[[[1
 "              No warranty, express or implied.
 "    *** ***   Use At-Your-Own-Risk!   *** ***
 "
-" GetLatestVimScripts: 2932 5 :AutoInstall: histwin.vim
+" GetLatestVimScripts: 2932 6 :AutoInstall: histwin.vim
 " TODO: - write documentation
 "       - don't use matchadd for syntax highlighting but use
 "         appropriate syntax highlighting rules
@@ -44,12 +44,12 @@ let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdm=syntax
 autoload/histwin.vim	[[[1
-484
+464
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Wed, 21 Apr 2010 21:22:44 +0200
+" Last Change: Tue, 04 May 2010 22:42:22 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.11
+" Version:     0.12
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -85,7 +85,6 @@ fun! s:WarningMsg(msg)"{{{1
 	echohl Normal
 	let v:errmsg = msg
 endfun "}}}
-
 fun! s:Init()"{{{1
 	if exists("g:undo_tree_help")
 	   let s:undo_help=g:undo_tree_help
@@ -131,7 +130,6 @@ fun! s:Init()"{{{1
 	    let b:undo_dict={}
 	endif
 endfun "}}}
-
 fun! s:ReturnHistList(winnr)"{{{1
 	redir => a
 	sil :undol
@@ -173,11 +171,9 @@ fun! s:ReturnHistList(winnr)"{{{1
 	endfor
 	return extend(histdict,customtags,"force")
 endfun "}}}
-
 fun! s:SortValues(a,b)"{{{1
 	return (a:a.change+0)==(a:b.change+0) ? 0 : (a:a.change+0) > (a:b.change+0) ? 1 : -1
 endfun"}}}
-
 fun! s:MaxTagsLen()"{{{1
 	let tags = getbufvar(s:orig_buffer, 'undo_customtags')
 	let d=[]
@@ -188,7 +184,6 @@ fun! s:MaxTagsLen()"{{{1
 	call map(d, 'strlen(v:val)')
 	return max(d)
 endfu "}}}
-
 fun! s:HistWin()"{{{1
 	let undo_buf=bufwinnr('^'.s:undo_winname.'$')
 	" Adjust size so that each tag will fit on the screen
@@ -228,7 +223,6 @@ fun! s:HistWin()"{{{1
 	exe bufwinnr(s:orig_buffer) . ' wincmd w'
 	return undo_buf
 endfun "}}}
-
 fun! s:PrintUndoTree(winnr)"{{{1
 	let bufname     = (empty(bufname(s:orig_buffer)) ? '[No Name]' : fnamemodify(bufname(s:orig_buffer),':t'))
 	let changenr    = changenr()
@@ -280,10 +274,10 @@ fun! s:PrintUndoTree(winnr)"{{{1
 	setl nomodifiable
 	call setpos('.', save_cursor)
 endfun "}}}
-
 fun! s:HilightLines(changenr)"{{{1
 	syn match UBTitle      '^\%1lUndo-Tree: \zs.*$'
-	syn match UBInfo       '^".*$'
+	syn match UBInfo       '^".*$' contains=UBKEY
+	syn match UBKey        '^"\s\zs\%(\(<[^>]*>\)\|\u\)\ze\s'
 	syn match UBList       '^\d\+\ze'
 	syn match UBTime       '\d\d:\d\d:\d\d' "nextgroup=UBDelimStart
 	syn region UBTag matchgroup=UBDelim start='/' end='/$' keepend
@@ -298,8 +292,8 @@ fun! s:HilightLines(changenr)"{{{1
 	hi def link UBTime	 		 Underlined
 	hi def link UBDelim			 Ignore
 	hi def link UBActive		 PmenuSel
+	hi def link UBKey            SpecialKey
 endfun "}}}
-
 fun! s:PrintHelp(...)"{{{1
 	let mess=['" actv. keys in this window']
 	call add(mess, '" I toggles help screen')
@@ -318,7 +312,6 @@ fun! s:PrintHelp(...)"{{{1
 	call add(mess, '')
 	call append('$', mess)
 endfun "}}}
-
 fun! s:DiffUndoBranch(change)"{{{1
 	let prevchangenr=<sid>UndoBranch()
 	if empty(prevchangenr)
@@ -342,7 +335,6 @@ fun! s:DiffUndoBranch(change)"{{{1
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 	diffthis
 endfun "}}}
-
 fun! s:ReturnTime()"{{{1
 	let a=matchstr(getline('.'),'^\d\+)\s\+\zs\d\d:\d\d:\d\d\ze\s')
 	if a == -1
@@ -351,7 +343,6 @@ fun! s:ReturnTime()"{{{1
 	endif
 	return a
 endfun"}}}
-
 fun! s:ReturnItem(time, histdict)"{{{1
 	for [key, item] in items(a:histdict)
 		if item['time'] == a:time
@@ -360,7 +351,6 @@ fun! s:ReturnItem(time, histdict)"{{{1
 	endfor
 	return ''
 endfun"}}}
-
 fun! s:GetLineNr(changenr,list)"{{{1
 	let i=0
 	for item in a:list
@@ -371,7 +361,6 @@ fun! s:GetLineNr(changenr,list)"{{{1
 	endfor
 	return -1
 endfun!"}}}
-
 fun! s:ReplayUndoBranch()"{{{1
 	let time	   =  s:ReturnTime()
 	exe bufwinnr(s:orig_buffer) . ' wincmd w'
@@ -401,7 +390,6 @@ fun! s:ReplayUndoBranch()"{{{1
 	    "echohl WarningMsg | echo "Replay not possible\nDid you reload the file?" |echohl Normal
 	endtry
 endfun "}}}
-
 fun! s:ReturnBranch()"{{{1
 	let a=matchstr(getline('.'), '^\d\+\ze')+0
 	if a == -1
@@ -410,18 +398,15 @@ fun! s:ReturnBranch()"{{{1
 	endif
 	return a
 endfun "}}}
-
 fun! s:ToggleHelpScreen()"{{{1
 	let s:undo_help=!s:undo_help
 	exe bufwinnr(s:orig_buffer) . ' wincmd w'
 	call s:PrintUndoTree(s:HistWin())
 endfun "}}}
-
 fun! s:ToggleDetail()"{{{1
 	let s:undo_tree_dtl=!s:undo_tree_dtl
 	call s:PrintUndoTree(s:HistWin())
 endfun "}}}
-
 fun! s:UndoBranchTag(change, time)"{{{1
 ""	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 "	let changenr=changenr()
@@ -444,7 +429,6 @@ fun! s:UndoBranchTag(change, time)"{{{1
 	call setbufvar(s:orig_buffer, 'undo_customtags', cdict)
 	call s:PrintUndoTree(s:HistWin())
 endfun "}}}
-
 fun! s:UndoBranch()"{{{1
 	let dict			 =	 getbufvar(s:orig_buffer, 'undo_tagdict')
 	let key=s:ReturnItem(s:ReturnTime(),dict)
@@ -496,7 +480,6 @@ fun! s:UndoBranch()"{{{1
 	call setpos('.', cpos)
 	return cur_changenr
 endfun "}}}
-
 fun! s:MapKeys()"{{{1
 	nnoremap <script> <silent> <buffer> I     :<C-U>silent :call <sid>ToggleHelpScreen()<CR>
 	nnoremap <script> <silent> <buffer> <C-L> :<C-U>silent :call histwin#UndoBrowse()<CR>
@@ -508,12 +491,10 @@ fun! s:MapKeys()"{{{1
 	nmap	 <script> <silent> <buffer> T     :call <sid>UndoBranchTag(<sid>ReturnBranch(),<sid>ReturnTime())<CR>:<C-U>silent :call histwin#UndoBrowse()<CR>
 	nmap	 <script> <silent> <buffer> C     :call <sid>ClearTags()<CR><C-L>
 endfun "}}}
-
 fun! s:ClearTags()"{{{1
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 	let b:undo_customtags={}
 endfun"}}}
-
 fun! histwin#UndoBrowse()"{{{1
 	if &ul != -1
 		call s:Init()
@@ -524,33 +505,33 @@ fun! histwin#UndoBrowse()"{{{1
 		echoerr "Histwin: Undo has been disabled. Check your undolevel setting!"
 	endif
 endfun "}}}
-
 " Restore: {{{1
 let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\"
 doc/histwin.txt	[[[1
-257
+277
 *histwin.txt*  Plugin to browse the undo-tree
 
-Version: 0.11 Wed, 21 Apr 2010 21:22:44 +0200
+Version: 0.12 Tue, 04 May 2010 22:42:22 +0200
 Author:  Christian Brabandt <cb@256bit.org>
-Copyright: (c) 2009, 2010 by Christian Brabandt		    *histwin-copyright*
+Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
            The VIM LICENSE applies to histwin.vim and histwin.txt
            (see |copyright|) except use histwin instead of "Vim".
-	   NO WARRANTY, EXPRESS OR IMPLIED.  USE AT-YOUR-OWN-RISK.
+           NO WARRANTY, EXPRESS OR IMPLIED.  USE AT-YOUR-OWN-RISK.
 
 ==============================================================================
 1. Contents                                                  *histwin-contents*
 
-1. Contents..................................................|histwin-contents|
-2. Functionality.............................................|histwin-plugin|
-   Opening the Undo-Tree Window..............................|histwin-browse|
-3. Keybindings...............................................|histwin-keys|
-4. Configuration.............................................|histwin-config|
-   Configuraion Variables....................................|histwin-var|
-   Color Configuration.......................................|histwin-syntax|
-5. History...................................................|histwin-history|
+1. Contents.................................................|histwin-contents|
+2. Functionality............................................|histwin-plugin|
+   Opening the Undo-Tree Window.............................|histwin-browse|
+3. Keybindings..............................................|histwin-keys|
+4. Configuration............................................|histwin-config|
+   Configuraion Variables...................................|histwin-var|
+   Color Configuration......................................|histwin-color|
+5. Feedback.................................................|histwin-feedback|
+6. History..................................................|histwin-history|
 
 ==============================================================================
                                                               *histwin-plugin*
@@ -569,7 +550,7 @@ states. It opens a new window, which contains all available states and using
 this plugin allows you to tag a previous change or go back to a particular
 state.
 
-                                                         *histwin-browse* *:UB*
+                                                        *histwin-browse* *:UB*
 2.1 Opening the Undo-Tree Window
 
 By default you can open the Undo-Tree Window by issuing :UB (Mnemonic:
@@ -584,12 +565,12 @@ like this:
 |" I toggles help screen       |    echo "Name: $0: arg|
 |" <Enter> goto undo branch    |    echo               |
 |" <C-L>   Update view         |    exit 1             |
-|" T	   Tag sel. branch     |fi                     |    
-|" P	   Toggle view         |                       |    
-|" D	   Diff sel. branch    |if true; then          |    
-|" R	   Replay sel. branch  |    dir="${1%/*}"      |    
-|" C	   Clear all tags      |    file="${1##*/}"    |    
-|" Q	   Quit window         |    target="${2}/${di  |    
+|" T       Tag sel. branch     |fi                     |
+|" P       Toggle view         |                       |
+|" D       Diff sel. branch    |if true; then          |
+|" R       Replay sel. branch  |    dir="${1%/*}"      |
+|" C       Clear all tags      |    file="${1##*/}"    |
+|" Q       Quit window         |    target="${2}/${di  |
 |"                             |    if [ ! -e "${targ  |
 |" Undo-Tree, v0.9             |        mkdir -p "$ta  |
 |                              |        mv "$1" "$tar  |
@@ -621,7 +602,7 @@ Please note, that the Time for start-editing will always be shown as 00:00:00,
 because currently there is no way to retrieve this time from within vim.
 
 ==============================================================================
-                                                              *histwin-keys*
+                                                                *histwin-keys*
 3. Keybindings
 
 By default, the following keys are active in Normal mode in the Undo-Tree
@@ -629,8 +610,8 @@ window:
 
 'Enter'  Go to the branch, on which is selected with the cursor. By default,
          if switching to an older branch, the buffer will be set to
-	 'nomodifiable'. If you don't want that, you need to set the
-	 g:undo_tree_nomod variable to off (see |histwin-var|).
+         'nomodifiable'. If you don't want that, you need to set the
+         g:undo_tree_nomod variable to off (see |histwin-var|).
 '<C-L>'  Update the window
 'T'      Tag the branch, that is selected. You'll be prompted for a tag.
 'P'      Toggle view (the change-number will be displayed). You can use this
@@ -643,7 +624,7 @@ window:
 'Q'      Quit window
 
 ==============================================================================
-                                                  *histwin-var* *histwin-config*
+                                                *histwin-var* *histwin-config*
 4.1 Configuration variables
 
 You can adjust several parameters for the Undo-Tree window, by setting some
@@ -715,8 +696,7 @@ g:undo_tree_nomod variable in your |.vimrc| like this: >
 
 ------------------------------------------------------------------------------
 
-
-                                                                *histwin-color*
+                                                               *histwin-color*
 4.2 Color configuration
 
 If you want to customize the colors, you can simply change the following
@@ -735,6 +715,8 @@ UBDelim   This group defines the look of the delimiter for the tag. By default
           this links to Ignore
 UBActive  This group defines how the active selection is displayed. By default
           this links to PmenuSel (see |hl-PmenuSel|)
+UBKey     This group defines, how keys are displayed within the information
+          banner. By default, this links to SpecialKey (see |hl-SpecialKey|)
 
 Say you want to change the color for the Tag values and you think, it should
 look like |IncSerch|, so you can do this in your .vimrc file:
@@ -742,18 +724,36 @@ look like |IncSerch|, so you can do this in your .vimrc file:
 :hi link UBTag IncSearch
 
 ==============================================================================
-                			        		*histwin-history*
-5. histwin History
+                                                            *histwin-feedback*
+5. Feedback
 
+Feedback is always welcome. If you like the plugin, please rate it at the
+vim-page:
+http://www.vim.org/scripts/script.php?script_id=2932
 
+You can also follow the development of the plugin at github:
+http://github.com/chrisbra/histwin.vim
+
+Please don't hesitate to report any bugs to the maintainer, mentioned in the
+third line of this document.
+
+==============================================================================
+                                                             *histwin-history*
+6. histwin History
+
+0.12    - Small extension to the help file
+        - generate help file with 'et' set, so the README at github looks
+          better
+        - Highlight the key binding using |hl-SpecialKey|
+        - The help tag for the color configuration was wrong.
 0.11    - Set old buffers read only (disable the setting via the 
           g:undo_tree_nomod variable
-	- Make sure, Warning Messages are really displayed using :unsilent
+        - Make sure, Warning Messages are really displayed using :unsilent
 0.10    - Fixed annoying Resizing bug
         - linebreak tags, if they are too long
-	- dynamically grow the histwin window, for longer tags (up
-	  to a maximum)
-	- Bugfix: Always indicate the correct branch
+        - dynamically grow the histwin window, for longer tags (up
+          to a maximum)
+        - Bugfix: Always indicate the correct branch
         - Added a few try/catch statements and some error handling
 0.9     - Error handling for Replaying (it may not work always)
         - Documentation
@@ -776,7 +776,7 @@ look like |IncSerch|, so you can do this in your .vimrc file:
           (could already by defined Blockquote.vim does for example)
 0.6     - fix missing bufname() when creating the undo_tree window
         - make undo_tree window a little bit smaller
-      	  (size is adjustable via g:undo_tree_wdth variable)
+          (size is adjustable via g:undo_tree_wdth variable)
 0.5     - add missing endif (which made version 0.4 unusuable)
 0.4     - Allow diffing with selected branch
         - highlight current version
@@ -787,4 +787,4 @@ look like |IncSerch|, so you can do this in your .vimrc file:
         - allow switching to initial load state, before
           buffer was edited
 ==============================================================================
-vim:tw=78:ts=8:ft=help
+vim:tw=78:ts=8:ft=help:et

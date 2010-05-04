@@ -16,7 +16,7 @@ Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
 3. Keybindings..............................................|histwin-keys|
 4. Configuration............................................|histwin-config|
    Configuraion Variables...................................|histwin-var|
-   Color Configuration......................................|histwin-syntax|
+   Color Configuration......................................|histwin-color|
 5. Feedback.................................................|histwin-feedback|
 6. History..................................................|histwin-history|
 
@@ -202,6 +202,8 @@ UBDelim   This group defines the look of the delimiter for the tag. By default
           this links to Ignore
 UBActive  This group defines how the active selection is displayed. By default
           this links to PmenuSel (see |hl-PmenuSel|)
+UBKey     This group defines, how keys are displayed within the information
+          banner. By default, this links to SpecialKey (see |hl-SpecialKey|)
 
 Say you want to change the color for the Tag values and you think, it should
 look like |IncSerch|, so you can do this in your .vimrc file:
@@ -229,6 +231,8 @@ third line of this document.
 0.12    - Small extension to the help file
         - generate help file with 'et' set, so the README at github looks
           better
+        - Highlight the key binding using |hl-SpecialKey|
+        - The help tag for the color configuration was wrong.
 0.11    - Set old buffers read only (disable the setting via the 
           g:undo_tree_nomod variable
         - Make sure, Warning Messages are really displayed using :unsilent

@@ -38,7 +38,6 @@ fun! s:WarningMsg(msg)"{{{1
 	echohl Normal
 	let v:errmsg = msg
 endfun "}}}
-
 fun! s:Init()"{{{1
 	if exists("g:undo_tree_help")
 	   let s:undo_help=g:undo_tree_help
@@ -84,7 +83,6 @@ fun! s:Init()"{{{1
 	    let b:undo_dict={}
 	endif
 endfun "}}}
-
 fun! s:ReturnHistList(winnr)"{{{1
 	redir => a
 	sil :undol
@@ -126,11 +124,9 @@ fun! s:ReturnHistList(winnr)"{{{1
 	endfor
 	return extend(histdict,customtags,"force")
 endfun "}}}
-
 fun! s:SortValues(a,b)"{{{1
 	return (a:a.change+0)==(a:b.change+0) ? 0 : (a:a.change+0) > (a:b.change+0) ? 1 : -1
 endfun"}}}
-
 fun! s:MaxTagsLen()"{{{1
 	let tags = getbufvar(s:orig_buffer, 'undo_customtags')
 	let d=[]
@@ -141,7 +137,6 @@ fun! s:MaxTagsLen()"{{{1
 	call map(d, 'strlen(v:val)')
 	return max(d)
 endfu "}}}
-
 fun! s:HistWin()"{{{1
 	let undo_buf=bufwinnr('^'.s:undo_winname.'$')
 	" Adjust size so that each tag will fit on the screen
@@ -181,7 +176,6 @@ fun! s:HistWin()"{{{1
 	exe bufwinnr(s:orig_buffer) . ' wincmd w'
 	return undo_buf
 endfun "}}}
-
 fun! s:PrintUndoTree(winnr)"{{{1
 	let bufname     = (empty(bufname(s:orig_buffer)) ? '[No Name]' : fnamemodify(bufname(s:orig_buffer),':t'))
 	let changenr    = changenr()
@@ -233,10 +227,10 @@ fun! s:PrintUndoTree(winnr)"{{{1
 	setl nomodifiable
 	call setpos('.', save_cursor)
 endfun "}}}
-
 fun! s:HilightLines(changenr)"{{{1
 	syn match UBTitle      '^\%1lUndo-Tree: \zs.*$'
-	syn match UBInfo       '^".*$'
+	syn match UBInfo       '^".*$' contains=UBKEY
+	syn match UBKey        '^"\s\zs\%(\(<[^>]*>\)\|\u\)\ze\s'
 	syn match UBList       '^\d\+\ze'
 	syn match UBTime       '\d\d:\d\d:\d\d' "nextgroup=UBDelimStart
 	syn region UBTag matchgroup=UBDelim start='/' end='/$' keepend
@@ -251,8 +245,8 @@ fun! s:HilightLines(changenr)"{{{1
 	hi def link UBTime	 		 Underlined
 	hi def link UBDelim			 Ignore
 	hi def link UBActive		 PmenuSel
+	hi def link UBKey            SpecialKey
 endfun "}}}
-
 fun! s:PrintHelp(...)"{{{1
 	let mess=['" actv. keys in this window']
 	call add(mess, '" I toggles help screen')
@@ -271,7 +265,6 @@ fun! s:PrintHelp(...)"{{{1
 	call add(mess, '')
 	call append('$', mess)
 endfun "}}}
-
 fun! s:DiffUndoBranch(change)"{{{1
 	let prevchangenr=<sid>UndoBranch()
 	if empty(prevchangenr)
@@ -295,7 +288,6 @@ fun! s:DiffUndoBranch(change)"{{{1
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 	diffthis
 endfun "}}}
-
 fun! s:ReturnTime()"{{{1
 	let a=matchstr(getline('.'),'^\d\+)\s\+\zs\d\d:\d\d:\d\d\ze\s')
 	if a == -1
@@ -304,7 +296,6 @@ fun! s:ReturnTime()"{{{1
 	endif
 	return a
 endfun"}}}
-
 fun! s:ReturnItem(time, histdict)"{{{1
 	for [key, item] in items(a:histdict)
 		if item['time'] == a:time
@@ -313,7 +304,6 @@ fun! s:ReturnItem(time, histdict)"{{{1
 	endfor
 	return ''
 endfun"}}}
-
 fun! s:GetLineNr(changenr,list)"{{{1
 	let i=0
 	for item in a:list
@@ -324,7 +314,6 @@ fun! s:GetLineNr(changenr,list)"{{{1
 	endfor
 	return -1
 endfun!"}}}
-
 fun! s:ReplayUndoBranch()"{{{1
 	let time	   =  s:ReturnTime()
 	exe bufwinnr(s:orig_buffer) . ' wincmd w'
@@ -354,7 +343,6 @@ fun! s:ReplayUndoBranch()"{{{1
 	    "echohl WarningMsg | echo "Replay not possible\nDid you reload the file?" |echohl Normal
 	endtry
 endfun "}}}
-
 fun! s:ReturnBranch()"{{{1
 	let a=matchstr(getline('.'), '^\d\+\ze')+0
 	if a == -1
@@ -363,18 +351,15 @@ fun! s:ReturnBranch()"{{{1
 	endif
 	return a
 endfun "}}}
-
 fun! s:ToggleHelpScreen()"{{{1
 	let s:undo_help=!s:undo_help
 	exe bufwinnr(s:orig_buffer) . ' wincmd w'
 	call s:PrintUndoTree(s:HistWin())
 endfun "}}}
-
 fun! s:ToggleDetail()"{{{1
 	let s:undo_tree_dtl=!s:undo_tree_dtl
 	call s:PrintUndoTree(s:HistWin())
 endfun "}}}
-
 fun! s:UndoBranchTag(change, time)"{{{1
 ""	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 "	let changenr=changenr()
@@ -397,7 +382,6 @@ fun! s:UndoBranchTag(change, time)"{{{1
 	call setbufvar(s:orig_buffer, 'undo_customtags', cdict)
 	call s:PrintUndoTree(s:HistWin())
 endfun "}}}
-
 fun! s:UndoBranch()"{{{1
 	let dict			 =	 getbufvar(s:orig_buffer, 'undo_tagdict')
 	let key=s:ReturnItem(s:ReturnTime(),dict)
@@ -449,7 +433,6 @@ fun! s:UndoBranch()"{{{1
 	call setpos('.', cpos)
 	return cur_changenr
 endfun "}}}
-
 fun! s:MapKeys()"{{{1
 	nnoremap <script> <silent> <buffer> I     :<C-U>silent :call <sid>ToggleHelpScreen()<CR>
 	nnoremap <script> <silent> <buffer> <C-L> :<C-U>silent :call histwin#UndoBrowse()<CR>
@@ -461,12 +444,10 @@ fun! s:MapKeys()"{{{1
 	nmap	 <script> <silent> <buffer> T     :call <sid>UndoBranchTag(<sid>ReturnBranch(),<sid>ReturnTime())<CR>:<C-U>silent :call histwin#UndoBrowse()<CR>
 	nmap	 <script> <silent> <buffer> C     :call <sid>ClearTags()<CR><C-L>
 endfun "}}}
-
 fun! s:ClearTags()"{{{1
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 	let b:undo_customtags={}
 endfun"}}}
-
 fun! histwin#UndoBrowse()"{{{1
 	if &ul != -1
 		call s:Init()
@@ -477,7 +458,6 @@ fun! histwin#UndoBrowse()"{{{1
 		echoerr "Histwin: Undo has been disabled. Check your undolevel setting!"
 	endif
 endfun "}}}
-
 " Restore: {{{1
 let &cpo=s:cpo
 unlet s:cpo

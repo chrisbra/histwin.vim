@@ -27,7 +27,7 @@ let s:undo_tree_dtl   = (exists('g:undo_tree_dtl')   ? g:undo_tree_dtl   :   (ex
 
 " Functions:
 " 
-fun! s:WarningMsg(msg)"{{{1
+fun! histwin#WarningMsg(msg)"{{{1
 	echohl WarningMsg
 	let msg = "histwin: " . a:msg
 	if exists(":unsilent") == 2

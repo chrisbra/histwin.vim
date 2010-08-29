@@ -20,6 +20,11 @@ if exists("g:loaded_undo_browse") || &cp || &ul == -1
   finish
 endif
 
+if v:version < 703
+	call histwin#WarningMsg("This plugin requires Vim 7.3 or higher")
+	finish
+endif
+
 let g:loaded_undo_browse = 0.13
 let s:cpo                = &cpo
 set cpo&vim
@@ -28,7 +33,7 @@ set cpo&vim
 if exists(":UB") != 2
 	com -nargs=0 UB :call histwin#UndoBrowse()
 else
-	echoerr "histwin: UB is already defined. May be by another Plugin?"
+	call histwin#WarningMsg("UB is already defined. May be by another Plugin?")
 endif
 
 " ChangeLog:

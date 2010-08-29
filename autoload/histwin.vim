@@ -101,7 +101,7 @@ fun! s:ReturnHistList(winnr)"{{{1
 "	else
 "    if !has_key(b:undo_tagdict, '0')
 		"let b:undo_customtags['0'] = {'number': 0, 'change': 0, 'time': '00:00:00', 'tag': 'Start Editing'}
-	let histdict[0] = {'number': 0, 'change': 0, 'time': '00:00:00', 'tag': 'Start Editing'}
+	let histdict[0] = {'number': 0, 'change': 0, 'time': '00:00:00', 'tag': 'Start Editing' ,'save':0}
 "	endif
 
 	let i=1
@@ -109,6 +109,7 @@ fun! s:ReturnHistList(winnr)"{{{1
 		let change	=  matchstr(item, '^\s\+\zs\d\+') + 0
 		let nr		=  matchstr(item, '^\s\+\d\+\s\+\zs\d\+') + 0
 		let time	=  matchstr(item, '^\%(\s\+\d\+\)\{2}\s\+\zs.*$')
+		let save	=  matchstr(item, '\s\+\zs\d\+$') + 0
 		if time !~ '\d\d:\d\d:\d\d'
 		   let time=matchstr(time, '^\d\+')
 		   let time=strftime('%H:%M:%S', localtime()-time)
@@ -119,7 +120,7 @@ fun! s:ReturnHistList(winnr)"{{{1
 		else
 			let tag=''
 		endif
-	   let histdict[change]={'change': change, 'number': nr, 'time': time, 'tag': tag}
+	   let histdict[change]={'change': change, 'number': nr, 'time': time, 'tag': tag, 'save': save}
 	   let i+=1
 	endfor
 	return extend(histdict,customtags,"force")
@@ -156,7 +157,7 @@ fun! s:HistWin()"{{{1
 	endif
 	" for the detail view, we need more space
 	if (!s:undo_tree_dtl) 
-		let s:undo_tree_wdth = s:undo_tree_wdth_orig + 6
+		let s:undo_tree_wdth = s:undo_tree_wdth_orig + 10
 	else
 		let s:undo_tree_wdth = s:undo_tree_wdth_orig
 	endif
@@ -193,7 +194,7 @@ fun! s:PrintUndoTree(winnr)"{{{1
 	if s:undo_tree_dtl
 		call append('$', printf("%-*s %-9s %s", strlen(len(histdict)), "Nr", "  Time", "Tag"))
 	else
-		call append('$', printf("%-*s %-9s %-6s %s", strlen(len(histdict)), "Nr", "  Time", "Change", "Tag"))
+		call append('$', printf("%-*s %-9s %-6s %-4s %s", strlen(len(histdict)), "Nr", "  Time", "Change", "Save", "Tag"))
 	endif
 
 	let i=1
@@ -210,8 +211,8 @@ fun! s:PrintUndoTree(winnr)"{{{1
 		let tag = (empty(tag) ? tag : '/'.tag.'/')
 		if !s:undo_tree_dtl
 			call append('$', 
-			\ printf("%0*d) %8s %6d %s", 
-			\ strlen(len(histdict)), i, line['time'], line['change'],
+			\ printf("%0*d) %8s %6d %4d %s", 
+			\ strlen(len(histdict)), i, line['time'], line['change'], line['save'], 
 			\ tag))
 		else
 			call append('$', 

@@ -20,7 +20,7 @@ if exists("g:loaded_undo_browse") || &cp || &ul == -1
   finish
 endif
 
-let g:loaded_undo_browse = 0.11
+let g:loaded_undo_browse = 0.13
 let s:cpo                = &cpo
 set cpo&vim
 

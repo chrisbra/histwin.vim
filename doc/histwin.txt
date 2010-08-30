@@ -102,7 +102,9 @@ window:
 '<C-L>'  Update the window
 'T'      Tag the branch, that is selected. You'll be prompted for a tag.
 'P'      Toggle view (the change-number will be displayed). You can use this
-         number to go directly to that change (see |:undo|)
+         number to go directly to that change (see |:undo|). Additionally the
+         saved counter will be displayed, which can be used to go directly to
+         the text version of a file write using |later| or |earlier|.
 'D'      Start diff mode with the branch that is selected by the cursor.
          (see |08.7|)
 'R'      Replay all changes, that have been made from the beginning.
@@ -128,12 +130,17 @@ To always show only a small information banner, set this in your .vimrc
 
 ------------------------------------------------------------------------------
 
-4.1.2 Include the Changenr in the window
+4.1.2 Display more details
 
-To have the Change number always included, set the g:undo_tree_dtl=0:
+To always display the detailed view (which includes the Change number and the
+file save counter), set the g:undo_tree_dtl=0:
 (by default, this variable is 1) >
 
     :let g:undo_tree_dtl = 0
+
+The change number can be used to directly jump to a undo state using |:undo|
+and the save counter can be used to directly go to the buffer's state when the
+file was written using |:earlier| and |:later|
 
 ------------------------------------------------------------------------------
 
@@ -228,6 +235,10 @@ third line of this document.
                                                              *histwin-history*
 6. histwin History
 
+0.13    - New version that uses Vim 7.3 persistent undo features
+          |new-persistent-undo|
+        - Display saved counter in detailed view
+        - Check for Vim Version 7.3
 0.12    - Small extension to the help file
         - generate help file with 'et' set, so the README at github looks
           better

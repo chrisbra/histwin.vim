@@ -108,7 +108,7 @@ fun! s:ReturnHistList(winnr)"{{{1
 	for item in templist
 		let change	=  matchstr(item, '^\s\+\zs\d\+') + 0
 		let nr		=  matchstr(item, '^\s\+\d\+\s\+\zs\d\+') + 0
-		let time	=  matchstr(item, '^\%(\s\+\d\+\)\{2}\s\+\zs.*$')
+		let time	=  matchstr(item, '^\%(\s\+\d\+\)\{2}\s\+\zs.*\ze\s*\d*$')
 		let save	=  matchstr(item, '\s\+\zs\d\+$') + 0
 		if time !~ '\d\d:\d\d:\d\d'
 		   let time=matchstr(time, '^\d\+')

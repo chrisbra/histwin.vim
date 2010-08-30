@@ -2,8 +2,8 @@
 " -------------------------------------------------------------
 " Last Change: Tue, 04 May 2010 22:42:22 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.12
-" Copyright:   (c) 2009 by Christian Brabandt
+" Version:     0.13
+" Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
 "              instead of "Vim".
@@ -11,9 +11,6 @@
 "    *** ***   Use At-Your-Own-Risk!   *** ***
 "
 " GetLatestVimScripts: 2932 6 :AutoInstall: histwin.vim
-" TODO: - write documentation
-"       - don't use matchadd for syntax highlighting but use
-"         appropriate syntax highlighting rules
 
 " Init:
 if exists("g:loaded_undo_browse") || &cp || &ul == -1
@@ -25,7 +22,7 @@ if v:version < 703
 	finish
 endif
 
-let g:loaded_undo_browse = 0.13
+let g:loaded_undo_browse = 0.12
 let s:cpo                = &cpo
 set cpo&vim
 

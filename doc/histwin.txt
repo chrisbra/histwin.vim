@@ -1,6 +1,6 @@
 *histwin.txt*  Plugin to browse the undo-tree
 
-Version: 0.12 Tue, 04 May 2010 22:42:22 +0200
+Version: 0.13 Tue, 31 Aug 2010 13:58:01 +0200
 Author:  Christian Brabandt <cb@256bit.org>
 Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
            The VIM LICENSE applies to histwin.vim and histwin.txt
@@ -59,11 +59,11 @@ like this:
 |" C       Clear all tags      |    file="${1##*/}"    |
 |" Q       Quit window         |    target="${2}/${di  |
 |"                             |    if [ ! -e "${targ  |
-|" Undo-Tree, v0.9             |        mkdir -p "$ta  |
+|" Undo-Tree, v0.13            |        mkdir -p "$ta  |
 |                              |        mv "$1" "$tar  |
 |Nr   Time    Tag              |                       |
 |1) 00:00:00 /Start Editing/   |                       |
-|2) 22:50:43 /First draft/     |                       |
+|2) 22:50:43 * /First draft/   |                       |
 |3) 23:01:22                   |                       |
 |4) 23:02:57                   |                       |
 |5) 23:05:04                   |                       |
@@ -80,10 +80,22 @@ Following the heading is a small information banner, that contains the most
 important key combinations, that are available in this window. 
 
 After that list, all available undo-changes are displayed. This is a list,
-that contains the number, the time this change was made, the change-number to
-use with the |:undo| command (this is by default not shown), and the tags,
-that have been entered. A bar shows the selected undo-branch that is active on
-the right side.
+that contains the number, the time this change was made  and the tags, that
+have been entered. An '*' indicates, if that particular undo branch has been
+saved before.
+
+The Change number, that identifies each change in the undo tree and the save
+number are by default hidden and will only be displayed, when you press 'P' in
+the histwin window. The change number can be used with the |:undo| command to
+jump to a particular change and the save number is useful with the |:earlier|
+and |:later| commands. 
+
+The active undo-branch on the right side is highlighted with the UBActive
+highlighting. Use >
+
+:hi UBActive
+
+to see how it will be highlighted. See also |histwin-color|.
 
 Please note, that the Time for start-editing will always be shown as 00:00:00,
 because currently there is no way to retrieve this time from within vim.
@@ -101,10 +113,11 @@ window:
          g:undo_tree_nomod variable to off (see |histwin-var|).
 '<C-L>'  Update the window
 'T'      Tag the branch, that is selected. You'll be prompted for a tag.
-'P'      Toggle view (the change-number will be displayed). You can use this
-         number to go directly to that change (see |:undo|). Additionally the
-         saved counter will be displayed, which can be used to go directly to
-         the text version of a file write using |later| or |earlier|.
+'P'      Toggle view (the change-number and save number will be displayed).
+         You can use this number to go directly to that change (see |:undo|).
+         Additionally the saved counter will be displayed, which can be used
+         to go directly to the text version of a file write using |later| or
+         |earlier|.
 'D'      Start diff mode with the branch that is selected by the cursor.
          (see |08.7|)
 'R'      Replay all changes, that have been made from the beginning.
@@ -213,7 +226,7 @@ UBKey     This group defines, how keys are displayed within the information
           banner. By default, this links to SpecialKey (see |hl-SpecialKey|)
 
 Say you want to change the color for the Tag values and you think, it should
-look like |IncSerch|, so you can do this in your .vimrc file:
+look like |IncSerch|, so you can do this in your .vimrc file: >
 
 :hi link UBTag IncSearch
 
@@ -238,7 +251,11 @@ third line of this document.
 0.13    - New version that uses Vim 7.3 persistent undo features
           |new-persistent-undo|
         - Display saved counter in detailed view
-        - Check for Vim Version 7.3
+        - Display indicator for saved branches.
+        - in diff mode, don't set the original buffer to be nomodifiable
+          (so you can always merge chunks).
+        - Check for Vim Version 7.3 (the plugin won't work with older versions
+          of Vim)
 0.12    - Small extension to the help file
         - generate help file with 'et' set, so the README at github looks
           better

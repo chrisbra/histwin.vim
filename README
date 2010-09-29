@@ -1,6 +1,6 @@
 *histwin.txt*  Plugin to browse the undo-tree
 
-Version: 0.13 Tue, 31 Aug 2010 13:58:01 +0200
+Version: 0.14 Wed, 29 Sep 2010 23:10:51 +0200
 Author:  Christian Brabandt <cb@256bit.org>
 Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
            The VIM LICENSE applies to histwin.vim and histwin.txt
@@ -13,15 +13,17 @@ Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
 1. Contents.................................................|histwin-contents|
 2. Functionality............................................|histwin-plugin|
    Opening the Undo-Tree Window.............................|histwin-browse|
+   Using tags...............................................|histwin-tags|
 3. Keybindings..............................................|histwin-keys|
 4. Configuration............................................|histwin-config|
    Configuraion Variables...................................|histwin-var|
    Color Configuration......................................|histwin-color|
+   Undolevels settings......................................|histwin-ut|
 5. Feedback.................................................|histwin-feedback|
 6. History..................................................|histwin-history|
 
 ==============================================================================
-                                                              *histwin-plugin*
+                                                        *histwin-plugin* *histwin*
 2. Functionality
 
 This plugin was written to allow an easy way of browsing the |undo-tree|, that
@@ -31,17 +33,17 @@ undo-history. You can use |g-| or |g+| to move in Vim within the different
 undo-branches.
 
 Unfortunately, going back to any state isn't very comfortable and you always
-need to remember at what time you did that change. Therefore the histwin-Plugin
-allows to easily view the available states and branch back to any of these
-states. It opens a new window, which contains all available states and using
-this plugin allows you to tag a previous change or go back to a particular
-state.
+need to remember at what time you did that change. Therefore the
+histwin-Plugin allows to easily view the available states and branch back to
+any of these states. It opens a new window, which contains all available
+states and using this plugin allows you to tag a previous change or go back to
+a particular state.
 
                                                         *histwin-browse* *:UB*
 2.1 Opening the Undo-Tree Window
 
 By default you can open the Undo-Tree Window by issuing :UB (Mnemonic:
-UndoBrowse). If you do this the first time, you will see a window that looks
+UndoBrowse). If you do this, you will see a window that looks
 like this:
 
 +------------------------------------------------------+
@@ -61,11 +63,11 @@ like this:
 |"                             |    if [ ! -e "${targ  |
 |" Undo-Tree, v0.13            |        mkdir -p "$ta  |
 |                              |        mv "$1" "$tar  |
-|Nr   Time    Tag              |                       |
-|1) 00:00:00 /Start Editing/   |                       |
-|2) 22:50:43 * /First draft/   |                       |
+|Nr   Time   Fl  Tag           |                       |
+|1)   Sep 01    /Start Editing/|                       |
+|2)   Sep 01 !  /First draft/  |                       |
 |3) 23:01:22                   |                       |
-|4) 23:02:57                   |                       |
+|4) 23:02:57 *  /Release 1/    |                       |
 |5) 23:05:04                   |                       |
 +------------------------------------------------------+
 
@@ -80,25 +82,56 @@ Following the heading is a small information banner, that contains the most
 important key combinations, that are available in this window. 
 
 After that list, all available undo-changes are displayed. This is a list,
-that contains the number, the time this change was made  and the tags, that
-have been entered. An '*' indicates, if that particular undo branch has been
-saved before.
+that contains the number, the time this change was made, some flags and the
+tags, that have been entered.
 
-The Change number, that identifies each change in the undo tree and the save
-number are by default hidden and will only be displayed, when you press 'P' in
-the histwin window. The change number can be used with the |:undo| command to
+The flags can be any of '!' or '*'. The '!' indicates, that this particular
+undo branch (that was probably tagged before) isn't available any more. The
+'*'  indicates, if that particular undo branch has been saved before (but is
+only visible in the dense view). See |histwin-ut| on why certain states might
+become inaccessible and what can be done against it. 
+
+In the detailed view, that is by default displayed, when you press 'P', the
+undo branch list will possibly be much longer. That is, because in this view,
+each save state will be displayed (along with it's save number). You
+can imagine, that this list might become very long.
+
+Additionally, the Change number, that identifies each change in the undo tree
+will be displayed. The change number can be used with the |:undo| command to
 jump to a particular change and the save number is useful with the |:earlier|
 and |:later| commands. 
 
 The active undo-branch on the right side is highlighted with the UBActive
-highlighting. Use >
+highlighting and the cursor will be positioned on that line. Use >
 
 :hi UBActive
 
 to see how it will be highlighted. See also |histwin-color|.
 
-Please note, that the Time for start-editing will always be shown as 00:00:00,
-because currently there is no way to retrieve this time from within vim.
+
+                                                               *histwin-tags*
+
+By default, tags that you enter will be volatile. That is, whenever you quit
+Vim, these tags are lost. Currently there is no way, to store or retrieve old
+tags.
+
+This behaviour was okay, until with Vim 7.3 the new permanent undo feature was
+included into Vim which makes undo information available even after restarting
+Vim. Starting with Vim 7.3 it is often desirable, to also store the tag
+information permanently.
+
+There is an easy way, to store your tag information easily, though. You can
+make use of the |viminfo| file, that stores states and search patterns and a
+like for later use. If you include the '!' flag when setting the option, vim
+will also store global variables, which then will be read back when restarting
+Vim (or by use of |rviminfo|). So if you like your tags be stored permanently,
+be sure, that you set your viminfo option correctly.
+
+(Note, currently, the viminfo file only stores global variables of type
+String, Float or Number, it can't store Dictionaries of Lists. There is a
+patch available, that will hopefully be soon be integrated in Vim mainline.
+So even if you set up your |viminfo| file correctly, the histwin plugin won't
+be able to restore your tags)
 
 ==============================================================================
                                                                 *histwin-keys*
@@ -113,6 +146,7 @@ window:
          g:undo_tree_nomod variable to off (see |histwin-var|).
 '<C-L>'  Update the window
 'T'      Tag the branch, that is selected. You'll be prompted for a tag.
+         To make the tag permanent, see |histwin-tags|
 'P'      Toggle view (the change-number and save number will be displayed).
          You can use this number to go directly to that change (see |:undo|).
          Additionally the saved counter will be displayed, which can be used
@@ -194,6 +228,7 @@ Currently, this works, by detecting, if the cursor was on the last branch in
 the histwin window, and if the cursor was not on the last branch, the buffer
 will be set 'nomodifiable'. You can always set the buffer to be modifiable by
 issuing: >
+
     :setl modifiable
 
 The default is to set the buffer read only. To disable this, you can set the
@@ -230,6 +265,20 @@ look like |IncSerch|, so you can do this in your .vimrc file: >
 
 :hi link UBTag IncSearch
 
+------------------------------------------------------------------------------
+
+                                                               *histwin-ut*
+4.3 Undolevel settings
+
+When using Vim's |persistent-undo| feature and making many changes, you might
+encounter the situation, when some of your tags will be flagged with an '!'.
+This happens, when these undo-states are not available any more. This happens
+especially, when making so many changes, that your 'undolevels' setting
+interferes. Basically you have done so many changes, that your first changes
+will already be deleted. So the obvious fix is to set the 'undolevels' setting
+to a much higher value, like 10,000 or even higher. This will however increase
+the memory usage quite a lot.
+
 ==============================================================================
                                                             *histwin-feedback*
 5. Feedback
@@ -248,6 +297,20 @@ third line of this document.
                                                              *histwin-history*
 6. histwin History
 
+0.14    - don't fix the width of the histwin window
+        - now use the undotree() function by default (if patch 7.3.005 is
+          included)
+        - display save states in the detailed view
+        - display the '!' when a state is not accessible anymore
+        - fixed an annoying bug, that when jumping to a particular undo state,
+          the plugin would jump to the wrong state (I hate octal mode)
+        - Make displaying the time much more reliable and also don't display
+          the time, if the change happened more than 24h ago (instead, display
+          the date, when this change was done).
+        - slightly improved error handling.
+        - prepare plugin, to permantly store the undotags in the viminfo file
+          (this isn't supported by a plain vanilla vim and requires a patch)
+        - A major rewrite (code cleanup, better documentation)
 0.13    - New version that uses Vim 7.3 persistent undo features
           |new-persistent-undo|
         - Display saved counter in detailed view

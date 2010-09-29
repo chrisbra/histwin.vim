@@ -1,6 +1,6 @@
 *histwin.txt*  Plugin to browse the undo-tree
 
-Version: 0.13 Tue, 31 Aug 2010 13:58:01 +0200
+Version: 0.14 Wed, 29 Sep 2010 23:10:51 +0200
 Author:  Christian Brabandt <cb@256bit.org>
 Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
            The VIM LICENSE applies to histwin.vim and histwin.txt

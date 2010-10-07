@@ -116,6 +116,10 @@ fun! s:ReturnHistList(winnr)"{{{1
 	" First item contains the header
 	let templist=split(a, '\n')[1:]
 
+	if len(templist) == 0
+		return []
+	endif
+
 	if s:undo_tree_epoch
 		let ut=[]
 		" Vim 7.3 introduced the undotree function, which we'll use to get all save

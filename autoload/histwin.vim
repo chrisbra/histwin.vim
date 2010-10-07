@@ -75,6 +75,8 @@ fun! s:Init()"{{{1
 	" Move to the buffer, we are monitoring
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 	if !exists("b:undo_customtags")
+    " TODO: Activate, when viminfo patch has been incorporated into vim
+	"
 	"	let fpath=fnameescape(fnamemodify(bufname('.'), ':p'))
 	"	if exists("g:UNDO_CTAGS") && has_key(g:UNDO_CTAGS, fpath)
 	"		let b:undo_customtags = g:UNDO_CTAGS[fpath]
@@ -84,7 +86,7 @@ fun! s:Init()"{{{1
 	endif
 
 	" global variable, that will be stored in the 'viminfo' file
-	" disabled, until this feature will be included in mainline vim
+    " TODO: Activate, when viminfo patch has been incorporated into vim
 	" (currently, viminfo only stores numbers and strings, no dictionaries)
 	" delete the '&& 0' to enable
 	if !exists("g:UNDO_CTAGS") && s:undo_tree_epoch && 0
@@ -122,7 +124,7 @@ fun! s:ReturnHistList()"{{{1
 
 	if s:undo_tree_epoch
 		if empty(templist)
-			return []
+			return {}
 		endif
 		let ut=[]
 		" Vim 7.3 introduced the undotree function, which we'll use to get all save
@@ -372,7 +374,13 @@ fun! s:PrintHelp(...)"{{{1
 	call append('$', mess)
 endfun
 
-fun! s:DiffUndoBranch(change)"{{{1
+fun! s:DiffUndoBranch()"{{{1
+	try
+		let change = s:ReturnBranch()
+	catch /histwin:/
+		call histwin#WarningMsg("Please put the cursor on one list item, when switching to a branch!")
+		return
+	endtry	
 	let prevchangenr=<sid>UndoBranch()
 	if empty(prevchangenr)
 		return ''
@@ -384,11 +392,10 @@ fun! s:DiffUndoBranch(change)"{{{1
 		setl modifiable
 	catch /Vim(undo):Undo number \d\+ not found/
 		call s:WarningMsg("Undo Change not found!")
-	    "echohl WarningMsg | unsilent echo "Undo Change not found." |echohl Normal
 		return ''
 	endtry
 	exe ':botright vsp '.tempname()
-	call setline(1, bufname(s:orig_buffer) . ' undo-branch: ' . a:change)
+	call setline(1, bufname(s:orig_buffer) . ' undo-branch: ' . change)
 	call append('$',buffer)
     exe "setl ft=".cur_ft
 	silent w!
@@ -412,8 +419,19 @@ fun! s:GetLineNr(changenr,list) "{{{1
 endfun
 
 fun! s:ReplayUndoBranch()"{{{1
-	let change     = <sid>ReturnBranch()
+	try
+		let change    =    s:ReturnBranch()
+	catch /histwin:/
+		call histwin#WarningMsg("Please put the cursor on one list item, when replaying a branch!")
+		return
+    endtry	
+
 	let tags       =  getbufvar(s:orig_buffer, 'undo_tagdict')
+
+	if empty(tags)
+		call histwin#WarningMsg("No Undotree available. Won't Replay")
+		return
+	endif
 	let tlist      =  sort(values(tags), "s:SortValues")
 	if s:undo_tree_dtl
 		call filter(tlist, 'v:val.number != 0')
@@ -421,7 +439,7 @@ fun! s:ReplayUndoBranch()"{{{1
 	let key        =  (len(tlist) > change ? tlist[change].change : '')
 
 	if empty(key)
-	   echo "Nothing to do"
+	   call histwin#WarningMsg("Nothing to do")
 	   return
 	endif
 	exe bufwinnr(s:orig_buffer) . ' wincmd w'
@@ -439,11 +457,9 @@ fun! s:ReplayUndoBranch()"{{{1
 	catch /Vim(undo):Undo number 0 not found/
 		exe ':u ' . change_old
 	    call s:WarningMsg("Replay not possible for initial state")
-	    "echohl WarningMsg | echo "Replay not possible for initial state" |echohl Normal
 	catch /Vim(undo):Undo number \d\+ not found/
 		exe ':u ' . change_old
 	    call s:WarningMsg("Replay not possible\nDid you reload the file?")
-	    "echohl WarningMsg | echo "Replay not possible\nDid you reload the file?" |echohl Normal
 	endtry
 endfun
 
@@ -452,6 +468,10 @@ fun! s:ReturnBranch()"{{{1
 	if a == -1
 		call search('^\d\+)', 'b')
 		let a=matchstr(getline('.'), '^0*\zs\d\+\ze')+0
+	endif
+	if a <= 0
+		throw "histwin: No Branch"
+		return 0
 	endif
 	return a-1
 endfun
@@ -467,23 +487,30 @@ fun! s:ToggleDetail()"{{{1
 	call histwin#UndoBrowse()
 endfun 
 
-fun! s:UndoBranchTag(change)"{{{1
-""	exe bufwinnr(s:orig_buffer) . 'wincmd w'
-"	let changenr=changenr()
-"    exe b:undo_win . 'wincmd w'
+fun! s:UndoBranchTag()"{{{1
 
+	try
+		let change     =    s:ReturnBranch()
+	catch /histwin:/
+		call histwin#WarningMsg("Please put the cursor on one list item, when tagging a branch!")
+		return
+	endtry	
 	let tags       =  getbufvar(s:orig_buffer, 'undo_tagdict')
+	if empty(tags)
+		call histwin#WarningMsg("No Undotree available. Won't tag")
+		return
+	endif
 	let cdict	   =  getbufvar(s:orig_buffer, 'undo_customtags')
 	let tlist      =  sort(values(tags), "s:SortValues")
 	if s:undo_tree_dtl
 		call filter(tlist, 'v:val.number != 0')
 	endif
-	let key        =  (len(tlist) > a:change ? tlist[a:change].change : '')
+	let key        =  (len(tlist) > change ? tlist[change].change : '')
 	if empty(key)
 		return
 	endif
 	call inputsave()
-	let tag=input("Tagname " . (a:change+1) . ": ", tags[key]['tag'])
+	let tag=input("Tagname " . (change+1) . ": ", tags[key]['tag'])
 	call inputrestore()
 
 	let cdict[key]	 		 = {'tag': tag,
@@ -500,14 +527,23 @@ endfun
 
 fun! s:UndoBranch()"{{{1
 	let dict	=	 getbufvar(s:orig_buffer, 'undo_tagdict')
-	let key     =    s:ReturnBranch()
+	if empty(dict)
+		call histwin#WarningMsg("No Undotree available. Can't switch to a different state!")
+		return
+	endif
+	try
+		let key     =    s:ReturnBranch()
+	catch /histwin:/
+		call histwin#WarningMsg("Please put the cursor on one list item, when switching to a branch!")
+		return
+    endtry	
 	let tlist      =  sort(values(dict), "s:SortValues")
 	if s:undo_tree_dtl
 		call filter(tlist, 'v:val.number != 0')
 	endif
 	let key   =  (len(tlist) > key ? tlist[key].change : '')
 	if empty(key)
-		echo "Nothing to do"
+		call histwin#WarningMsg("Nothing to do.")
 		return
 	endif
 	" Last line?
@@ -558,11 +594,11 @@ endfun
 fun! s:MapKeys()"{{{1
 	nnoremap <script> <silent> <buffer> I     :<C-U>silent :call <sid>ToggleHelpScreen()<CR>
 	nnoremap <script> <silent> <buffer> <C-L> :<C-U>silent :call histwin#UndoBrowse()<CR>
-	nnoremap <script> <silent> <buffer> D     :<C-U>silent :call <sid>DiffUndoBranch(<sid>ReturnBranch())<CR>
+	nnoremap <script> <silent> <buffer> D     :<C-U>silent :call <sid>DiffUndoBranch()<CR>
 	nnoremap <script> <silent> <buffer>	R     :<C-U>call <sid>ReplayUndoBranch()<CR>:silent! :call histwin#UndoBrowse()<CR>
 	nnoremap <script> <silent> <buffer> Q     :<C-U>q<CR>
 	nnoremap <script> <silent> <buffer> <CR>  :<C-U>silent :call <sid>UndoBranch()<CR>:call histwin#UndoBrowse()<CR>
-	nmap	 <script> <silent> <buffer> T     :call <sid>UndoBranchTag(<sid>ReturnBranch())<CR>:call histwin#UndoBrowse()<CR>
+	nmap	 <script> <silent> <buffer> T     :call <sid>UndoBranchTag()<CR>:call histwin#UndoBrowse()<CR>
 	nmap     <script> <silent> <buffer>	P     :<C-U>silent :call <sid>ToggleDetail()<CR><C-L>
 	nmap	 <script> <silent> <buffer> C     :call <sid>ClearTags()<CR><C-L>
 endfun "}}}

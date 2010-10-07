@@ -84,7 +84,10 @@ fun! s:Init()"{{{1
 	endif
 
 	" global variable, that will be stored in the 'viminfo' file
-	if !exists("g:UNDO_CTAGS") && s:undo_tree_epoch
+	" disabled, until this feature will be included in mainline vim
+	" (currently, viminfo only stores numbers and strings, no dictionaries)
+	" delete the '&& 0' to enable
+	if !exists("g:UNDO_CTAGS") && s:undo_tree_epoch && 0
 		let filename=fnameescape(fnamemodify(bufname('.'),':p'))
 		let g:UNDO_CTAGS={}
 		let g:UNDO_CTAGS[filename]=b:undo_customtags
@@ -107,7 +110,7 @@ fun! histwin#WarningMsg(msg)"{{{1
 	echohl Normal
 	let v:errmsg = msg
 endfun "}}}
-fun! s:ReturnHistList(winnr)"{{{1
+fun! s:ReturnHistList()"{{{1
 	let histdict={}
 	let customtags=copy(b:undo_customtags)
 	redir => a
@@ -563,7 +566,7 @@ fun! histwin#UndoBrowse()"{{{1
 	if &ul != -1
 		call s:Init()
 		let b:undo_win  = s:HistWin()
-		let b:undo_tagdict=s:ReturnHistList(bufwinnr(s:orig_buffer))
+		let b:undo_tagdict=s:ReturnHistList()
 		call s:PrintUndoTree(b:undo_win)
 		call s:MapKeys()
 	else

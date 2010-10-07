@@ -272,47 +272,52 @@ fun! s:PrintUndoTree(winnr)"{{{1
 		call append('$', printf("%-*s %-9s %-6s %-4s %2s %s", strlen(len(histdict)), "Nr", "  Time", "Change", "Save", "Fl", "Tag"))
 	endif
 
-	let i=1
-	let list=sort(values(histdict), 's:SortValues')
-	for line in list
-		if s:undo_tree_dtl && line.number==0
-			continue
-		endif
-		let tag=line.tag
-		" this is only an educated guess.
-		" This should be calculated
-		let width=winwidth(0) -  (!s:undo_tree_dtl ? 22 : 14)
-		if strlen(tag) > width
-			let tag=substitute(tag, '.\{'.width.'}', '&\r', 'g')
-		endif
-		let tag = (empty(tag) ? tag : '/'.tag.'/')
-		if !s:undo_tree_dtl
-			call append('$', 
-			\ printf("%0*d) %8s %6d %4d %1s %s", 
-			\ strlen(len(histdict)), i, 
-			\ localtime() - line['time'] > 24*3600 ? strftime('%b %d', line['time']) : strftime('%H:%M:%S', line['time']),
-			\ line['change'], line['save'], 
-			\ (line['number']<0 ? '!' : ' '),
-			\ tag))
-		else
-			call append('$', 
-			\ printf("%0*d) %8s %1s %s", 
-			\ strlen(len(histdict)), i,
-			\ localtime() - line['time'] > 24*3600 ? strftime('%b %d', line['time']) : strftime('%H:%M:%S', line['time']),
-			\ (line['number']<0 ? '!' : (line['save'] ? '*' : ' ')),
-			\ tag))
-			" DEBUG Version:
-"			call append('$', 
-"			\ printf("%0*d) %8s %1s%1s %s %s", 
-"			\ strlen(len(histdict)), i,
-"			\ localtime() - line['time'] > 24*3600 ? strftime('%b %d', line['time']) : strftime('%H:%M:%S', line['time']),
-"			\(line['save'] ? '*' : ' '),
-"			\(line['number']<0 ? '!' : ' '),
-"			\ tag, line['change']))
-		endif
-		let i+=1
-	endfor
-	%s/\r/\=submatch(0).repeat(' ', match(getline('.'), '\/')+1)/eg
+	if len(histdict) == 0
+		call append('$', "\" No changes")
+		let list=[]
+	else
+		let i=1
+		let list=sort(values(histdict), 's:SortValues')
+		for line in list
+			if s:undo_tree_dtl && line.number==0
+				continue
+			endif
+			let tag=line.tag
+			" this is only an educated guess.
+			" This should be calculated
+			let width=winwidth(0) -  (!s:undo_tree_dtl ? 22 : 14)
+			if strlen(tag) > width
+				let tag=substitute(tag, '.\{'.width.'}', '&\r', 'g')
+			endif
+			let tag = (empty(tag) ? tag : '/'.tag.'/')
+			if !s:undo_tree_dtl
+				call append('$', 
+				\ printf("%0*d) %8s %6d %4d %1s %s", 
+				\ strlen(len(histdict)), i, 
+				\ localtime() - line['time'] > 24*3600 ? strftime('%b %d', line['time']) : strftime('%H:%M:%S', line['time']),
+				\ line['change'], line['save'], 
+				\ (line['number']<0 ? '!' : ' '),
+				\ tag))
+			else
+				call append('$', 
+				\ printf("%0*d) %8s %1s %s", 
+				\ strlen(len(histdict)), i,
+				\ localtime() - line['time'] > 24*3600 ? strftime('%b %d', line['time']) : strftime('%H:%M:%S', line['time']),
+				\ (line['number']<0 ? '!' : (line['save'] ? '*' : ' ')),
+				\ tag))
+				" DEBUG Version:
+	"			call append('$', 
+	"			\ printf("%0*d) %8s %1s%1s %s %s", 
+	"			\ strlen(len(histdict)), i,
+	"			\ localtime() - line['time'] > 24*3600 ? strftime('%b %d', line['time']) : strftime('%H:%M:%S', line['time']),
+	"			\(line['save'] ? '*' : ' '),
+	"			\(line['number']<0 ? '!' : ' '),
+	"			\ tag, line['change']))
+			endif
+			let i+=1
+		endfor
+		%s/\r/\=submatch(0).repeat(' ', match(getline('.'), '\/')+1)/eg
+	endif
 	call s:HilightLines(s:GetLineNr(changenr,list)+1)
 	norm! zb
 	setl nomodifiable

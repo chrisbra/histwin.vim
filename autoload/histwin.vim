@@ -75,12 +75,12 @@ fun! s:Init()"{{{1
 	" Move to the buffer, we are monitoring
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 	if !exists("b:undo_customtags")
-		let fpath=fnameescape(fnamemodify(bufname('.'), ':p'))
-		if exists("g:UNDO_CTAGS") && has_key(g:UNDO_CTAGS, fpath)
-			let b:undo_customtags = g:UNDO_CTAGS[fpath]
-		else
+	"	let fpath=fnameescape(fnamemodify(bufname('.'), ':p'))
+	"	if exists("g:UNDO_CTAGS") && has_key(g:UNDO_CTAGS, fpath)
+	"		let b:undo_customtags = g:UNDO_CTAGS[fpath]
+	"	else
 			let b:undo_customtags={}
-		endif
+	"	endif
 	endif
 
 	" global variable, that will be stored in the 'viminfo' file
@@ -116,11 +116,11 @@ fun! s:ReturnHistList(winnr)"{{{1
 	" First item contains the header
 	let templist=split(a, '\n')[1:]
 
-	if len(templist) == 0
-		return []
-	endif
 
 	if s:undo_tree_epoch
+		if empty(templist)
+			return []
+		endif
 		let ut=[]
 		" Vim 7.3 introduced the undotree function, which we'll use to get all save
 		" states. Unfortunately, Vim would crash, if you used the undotree()
@@ -273,7 +273,7 @@ fun! s:PrintUndoTree(winnr)"{{{1
 	endif
 
 	if len(histdict) == 0
-		call append('$', "\" No changes")
+		call append('$', "\" No undotree available")
 		let list=[]
 	else
 		let i=1

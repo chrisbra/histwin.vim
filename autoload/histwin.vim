@@ -1,8 +1,8 @@
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Thu, 07 Oct 2010 23:47:20 +0200
+" Last Change: Sun, 10 Oct 2010 13:40:31 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.15
+" Version:     0.16
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -10,8 +10,6 @@
 "              No warranty, express or implied.
 "    *** ***   Use At-Your-Own-Risk!   *** ***
 "    TODO:     - make tags permanent (needs patch for Vim)
-"              - rewrite script and make use of undotree() functionality
-"                that is available since Vim 7.3 (should work now)
 "              - Bugfix: Sometimes the histwin window contains invalid data,
 "                        not sure how to reproduce it. Closing and reoping is
 "                        the workaround.
@@ -161,6 +159,7 @@ fun! s:ReturnHistList()"{{{1
 				\'save': (has_key(item, 'save') ? item.save : 0),
 				\}
 		endfor
+		unlet item
 		let first_seq = first.seq
 	else
 		" include the starting point as the first change.
@@ -169,31 +168,33 @@ fun! s:ReturnHistList()"{{{1
 		" so we will be inserting a dummy entry and need to
 		" check later, if this is called.
 		let histdict[0] = {'number': 0, 'change': 0, 'time': '00:00:00', 'tag': 'Start Editing' ,'save':0}
-		let first_seq = matchstr(templist[0], '^\s\+\zs\d\+')+0
+		if !empty(templist)
+			let first_seq = matchstr(templist[0], '^\s\+\zs\d\+')+0
 
-		let i=1
-		for item in templist
-			let change	=  matchstr(item, '^\s\+\zs\d\+') + 0
-			" Actually the number attribute will not be used, but we store it
-			" anyway, since we are already parsing the undolist manually.
-			let nr		=  matchstr(item, '^\s\+\d\+\s\+\zs\d\+') + 0
-			let time	=  matchstr(item, '^\%(\s\+\d\+\)\{2}\s\+\zs.\{-}\ze\s*\d*$')
-			let save	=  matchstr(item, '\s\+\zs\d\+$') + 0
-			if time !~ '\d\d:\d\d:\d\d'
-			let time=matchstr(time, '^\d\+')
-			let time=strftime('%H:%M:%S', localtime()-time)
-			endif
-			if has_key(customtags, change)
-				let tag=customtags[change].tag
-				call remove(customtags,change)
-			else
-				let tag=''
-			endif
-			let histdict[change]={'change': change, 'number': nr, 'time': time, 'tag': tag, 'save': save}
-			let i+=1
-		endfor
+			let i=1
+			for item in templist
+				let change	=  matchstr(item, '^\s\+\zs\d\+') + 0
+				" Actually the number attribute will not be used, but we store it
+				" anyway, since we are already parsing the undolist manually.
+				let nr		=  matchstr(item, '^\s\+\d\+\s\+\zs\d\+') + 0
+				let time	=  matchstr(item, '^\%(\s\+\d\+\)\{2}\s\+\zs.\{-}\ze\s*\d*$')
+				let save	=  matchstr(item, '\s\+\zs\d\+$') + 0
+				if time !~ '\d\d:\d\d:\d\d'
+				let time=matchstr(time, '^\d\+')
+				let time=strftime('%H:%M:%S', localtime()-time)
+				endif
+				if has_key(customtags, change)
+					let tag=customtags[change].tag
+					call remove(customtags,change)
+				else
+					let tag=''
+				endif
+				let histdict[change]={'change': change, 'number': nr, 'time': time, 'tag': tag, 'save': save}
+				let i+=1
+			endfor
+			unlet item
+		endif
 	endif
-	unlet item
 	" Mark invalid entries in the customtags dictionary
 	for [key,item] in items(customtags)
 		if item.change < first_seq
@@ -272,7 +273,7 @@ fun! s:PrintUndoTree(winnr)"{{{1
 	put =''
 	call s:PrintHelp(s:undo_help)
 	if s:undo_tree_dtl
-		call append('$', printf("%-*s %-9s %2s %s", strlen(len(histdict)), "Nr", "  Time", "Fl", "Tag"))
+		call append('$', printf("%-*s %-8s %2s %s", strlen(len(histdict)), "Nr", "  Time", "Fl", "Tag"))
 	else
 		call append('$', printf("%-*s %-9s %-6s %-4s %2s %s", strlen(len(histdict)), "Nr", "  Time", "Change", "Save", "Fl", "Tag"))
 	endif
@@ -299,7 +300,9 @@ fun! s:PrintUndoTree(winnr)"{{{1
 				call append('$', 
 				\ printf("%0*d) %8s %6d %4d %1s %s", 
 				\ strlen(len(histdict)), i, 
-				\ localtime() - line['time'] > 24*3600 ? strftime('%b %d', line['time']) : strftime('%H:%M:%S', line['time']),
+				\ (s:undo_tree_epoch ?
+				\ localtime() - line['time'] > 24*3600 ? strftime('%b %d', line['time']) : strftime('%H:%M:%S', line['time']) :
+				\ line['time']),
 				\ line['change'], line['save'], 
 				\ (line['number']<0 ? '!' : ' '),
 				\ tag))
@@ -307,7 +310,9 @@ fun! s:PrintUndoTree(winnr)"{{{1
 				call append('$', 
 				\ printf("%0*d) %8s %1s %s", 
 				\ strlen(len(histdict)), i,
-				\ localtime() - line['time'] > 24*3600 ? strftime('%b %d', line['time']) : strftime('%H:%M:%S', line['time']),
+				\ (s:undo_tree_epoch ?
+				\ localtime() - line['time'] > 24*3600 ? strftime('%b %d', line['time']) : strftime('%H:%M:%S', line['time']) :
+				\ line['time']),
 				\ (line['number']<0 ? '!' : (line['save'] ? '*' : ' ')),
 				\ tag))
 				" DEBUG Version:

@@ -1,6 +1,6 @@
 *histwin.txt*  Plugin to browse the undo-tree
 
-Version: 0.15 Thu, 07 Oct 2010 23:47:20 +0200
+Version: 0.16 Sun, 10 Oct 2010 13:40:31 +0200
 Author:  Christian Brabandt <cb@256bit.org>
 Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
            The VIM LICENSE applies to histwin.vim and histwin.txt
@@ -297,6 +297,13 @@ third line of this document.
                                                              *histwin-history*
 6. histwin History
 
+0.16    - more bugfixing. :UB throws errors in Vim before 7.3.005 fix that
+0.15    - Fixed bug when no undo-tree was available (partly by Ben Boeckel.
+          Thanks!)
+        - More error handling (when the cursor is not on a list item)
+        - Commenting out the entry to store the histdict in a global variable,
+          that should be written to the .viminfo file (but is not yet supported
+          by plain vim)
 0.14    - don't fix the width of the histwin window
         - now use the undotree() function by default (if patch 7.3.005 is
           included)

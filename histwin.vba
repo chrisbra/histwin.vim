@@ -5,9 +5,9 @@ plugin/histwinPlugin.vim	[[[1
 42
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Sun, 10 Oct 2010 13:40:31 +0200
+" Last Change: Sun, 10 Oct 2010 13:54:13 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.16
+" Version:     0.17
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -15,7 +15,7 @@ plugin/histwinPlugin.vim	[[[1
 "              No warranty, express or implied.
 "    *** ***   Use At-Your-Own-Risk!   *** ***
 "
-" GetLatestVimScripts: 2932 10 :AutoInstall: histwin.vim
+" GetLatestVimScripts: 2932 11 :AutoInstall: histwin.vim
 
 " Init:
 if exists("g:loaded_undo_browse") || &cp || &ul == -1
@@ -27,7 +27,7 @@ if v:version < 703
 	finish
 endif
 
-let g:loaded_undo_browse = 0.16
+let g:loaded_undo_browse = 0.17
 let s:cpo                = &cpo
 set cpo&vim
 
@@ -49,9 +49,9 @@ autoload/histwin.vim	[[[1
 654
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Sun, 10 Oct 2010 13:40:31 +0200
+" Last Change: Sun, 10 Oct 2010 13:54:13 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.16
+" Version:     0.17
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -216,7 +216,7 @@ fun! s:ReturnHistList()"{{{1
 		" easy way to obtain the state of the first change,
 		" so we will be inserting a dummy entry and need to
 		" check later, if this is called.
-		let histdict[0] = {'number': 0, 'change': 0, 'time': '00:00:00', 'tag': 'Start Editing' ,'save':0}
+		let histdict[0] = {'number': 1, 'change': 0, 'time': '00:00:00', 'tag': 'Start Editing' ,'save':0}
 		if !empty(templist)
 			let first_seq = matchstr(templist[0], '^\s\+\zs\d\+')+0
 
@@ -702,10 +702,10 @@ let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdl=0
 doc/histwin.txt	[[[1
-375
+377
 *histwin.txt*  Plugin to browse the undo-tree
 
-Version: 0.16 Sun, 10 Oct 2010 13:40:31 +0200
+Version: 0.17 Sun, 10 Oct 2010 13:54:13 +0200
 Author:  Christian Brabandt <cb@256bit.org>
 Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
            The VIM LICENSE applies to histwin.vim and histwin.txt
@@ -1002,6 +1002,7 @@ third line of this document.
                                                              *histwin-history*
 6. histwin History
 
+0.17    - don't hide the initial entry (for Vim < 7.3.005)
 0.16    - more bugfixing. :UB throws errors in Vim before 7.3.005 fix that
 0.15    - Fixed bug when no undo-tree was available (partly by Ben Boeckel.
           Thanks!)
@@ -1052,7 +1053,8 @@ third line of this document.
 0.8     - code cleanup
         - make speed of the replay adjustable. Use g:undo_tree_speed to set
           time in milliseconds
-0.7.2   - make sure, when switching to a different undo-branch, the undo-tree will be reloaded
+0.7.2   - make sure, when switching to a different undo-branch, the undo-tree
+          will be reloaded
         - check 'undolevel' settings  
 0.7.1   - fixed a problem with mapping the keys which broke the Undo-Tree keys
           (I guess I don't fully understand, when to use s: and <sid>)

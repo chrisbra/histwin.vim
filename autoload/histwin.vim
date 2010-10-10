@@ -167,7 +167,7 @@ fun! s:ReturnHistList()"{{{1
 		" easy way to obtain the state of the first change,
 		" so we will be inserting a dummy entry and need to
 		" check later, if this is called.
-		let histdict[0] = {'number': 0, 'change': 0, 'time': '00:00:00', 'tag': 'Start Editing' ,'save':0}
+		let histdict[0] = {'number': 1, 'change': 0, 'time': '00:00:00', 'tag': 'Start Editing' ,'save':0}
 		if !empty(templist)
 			let first_seq = matchstr(templist[0], '^\s\+\zs\d\+')+0
 

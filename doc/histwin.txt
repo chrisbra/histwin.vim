@@ -297,6 +297,8 @@ third line of this document.
                                                              *histwin-history*
 6. histwin History
 
+0.18    - don't leave the buffer in nomodifiable state (reported by Dave
+          Doran)
 0.17    - don't hide the initial entry (for Vim < 7.3.005)
 0.16    - more bugfixing. :UB throws errors in Vim before 7.3.005 fix that
 0.15    - Fixed bug when no undo-tree was available (partly by Ben Boeckel.

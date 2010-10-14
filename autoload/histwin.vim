@@ -602,6 +602,7 @@ fun! s:MapKeys()"{{{1
 	nnoremap <script> <silent> <buffer> D     :<C-U>silent :call <sid>DiffUndoBranch()<CR>
 	nnoremap <script> <silent> <buffer>	R     :<C-U>call <sid>ReplayUndoBranch()<CR>:silent! :call histwin#UndoBrowse()<CR>
 	nnoremap <script> <silent> <buffer> Q     :<C-U>q<CR>
+	nnoremap <script> <silent> <buffer> Q     :<C-U>silent :call <sid>CloseHistWin()<CR>
 	nnoremap <script> <silent> <buffer> <CR>  :<C-U>silent :call <sid>UndoBranch()<CR>:call histwin#UndoBrowse()<CR>
 	nmap	 <script> <silent> <buffer> T     :call <sid>UndoBranchTag()<CR>:call histwin#UndoBrowse()<CR>
 	nmap     <script> <silent> <buffer>	P     :<C-U>silent :call <sid>ToggleDetail()<CR><C-L>
@@ -614,11 +615,17 @@ fun! s:ClearTags()"{{{1
 endfun
 fun! histwin#UndoBrowse()"{{{1
 	if &ul != -1
+		if !exists("b:modifiable")
+			let b:modifiable=&l:ma
+		endif
 		call s:Init()
 		let b:undo_win  = s:HistWin()
 		let b:undo_tagdict=s:ReturnHistList()
 		call s:PrintUndoTree(b:undo_win)
 		call s:MapKeys()
+		if !exists("#histwin#BufUnload")
+			call <sid>AuCommandClose()
+		endif
 	else
 		echoerr "Histwin: Undo has been disabled. Check your undolevel setting!"
 	endif
@@ -641,6 +648,23 @@ fun! s:GetUndotreeEntries(entry) "{{{1
 		endif
 	endfor
 	return b
+endfun
+
+fun! s:CloseHistWin() "{{{1
+	call setbufvar(s:orig_buffer, "&ma", getbufvar(s:orig_buffer, "modifiable"))
+	"exe "au! <buffer=".bufnr('')."> BufUnload *"
+	aug histwin
+		au! BufUnload <buffer>
+	augroup end
+	aug! histwin
+	wincmd c
+endfun
+	
+fun! s:AuCommandClose() "{{{1
+	aug histwin
+		au!
+		au BufUnload <buffer> :call <sid>CloseHistWin()
+	aug end
 endfun
 
 " Debug function, not needed {{{1

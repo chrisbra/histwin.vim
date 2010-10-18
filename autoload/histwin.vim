@@ -72,6 +72,12 @@ fun! s:Init()"{{{1
 
 	" Move to the buffer, we are monitoring
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
+
+	" initialize the modifiable variable
+	if !exists("b:modifiable")
+		let b:modifiable=&l:ma
+	endif
+
 	if !exists("b:undo_customtags")
     " TODO: Activate, when viminfo patch has been incorporated into vim
 	"
@@ -134,25 +140,26 @@ fun! s:ReturnHistList()"{{{1
 		" (it's hard to get the right branches, so we parse the :undolist
 		" command and only take these entries (plus the first and last entry)
 		let ut=s:GetUndotreeEntries(undotree().entries)
+		call sort(ut, 's:SortValues')
 		let templist=map(templist, 'split(v:val)[0]')
 		let re = '^\%(' . join(templist, '\|') . '\)$'
 		let first = ut[0]
 		let first.tag='Start Editing'
 		if s:undo_tree_dtl
-			call filter(ut, 'v:val.seq =~ re')
+			call filter(ut, 'v:val.change =~ re')
 		else
-			call filter(ut, 'v:val.seq =~ re || v:val.save > 0')
+			call filter(ut, 'v:val.change =~ re || v:val.save > 0')
 		endif
 		let ut= [first] + ut
 			
 		for item in ut
-			if has_key(customtags, item.seq)
-				let tag=customtags[item.seq].tag
-				call remove(customtags,item.seq)
+			if has_key(customtags, item.change)
+				let tag=customtags[item.change].tag
+				call remove(customtags,item.change)
 			else
 				let tag=(has_key(item, 'tag') ? item.tag : '')
 			endif
-			let histdict[item.seq]={'change': item.seq,
+			let histdict[item.change]={'change': item.change,
 				\'number': item.number,
 				\'time': item.time,
 				\'tag': tag,
@@ -160,7 +167,7 @@ fun! s:ReturnHistList()"{{{1
 				\}
 		endfor
 		unlet item
-		let first_seq = first.seq
+		let first_seq = first.change
 	else
 		" include the starting point as the first change.
 		" unfortunately, there does not seem to exist an 
@@ -205,7 +212,7 @@ fun! s:ReturnHistList()"{{{1
 endfun
 
 fun! s:SortValues(a,b)"{{{1
-	return (a:a.change+0)==(a:b.change+0) ? 0 : (a:a.change+0) > (a:b.change+0) ? 1 : -1
+	return (a:a.change)==(a:b.change) ? 0 : (a:a.change) > (a:b.change) ? 1 : -1
 endfun
 
 fun! s:MaxTagsLen()"{{{1
@@ -615,9 +622,6 @@ fun! s:ClearTags()"{{{1
 endfun
 fun! histwin#UndoBrowse()"{{{1
 	if &ul != -1
-		if !exists("b:modifiable")
-			let b:modifiable=&l:ma
-		endif
 		call s:Init()
 		let b:undo_win  = s:HistWin()
 		let b:undo_tagdict=s:ReturnHistList()
@@ -639,7 +643,7 @@ fun! s:GetUndotreeEntries(entry) "{{{1
 	" Return only entries, that have an 'alt' key, which means, an undo branch
 	" started there
 	for item in a:entry
-		call add(b, { 'seq': item.seq, 'time': item.time, 'number': 1,
+		call add(b, { 'change': item.seq, 'time': item.time, 'number': 1,
 					\'save': has_key(item, 'save') ? item.save : 0})
 		if has_key(item, "alt")
 			" need to add the last seq. number that was in an alternative

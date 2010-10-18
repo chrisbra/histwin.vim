@@ -11,7 +11,10 @@ all: uninstall vimball install README
 vimball: $(PLUGIN).vba
 
 clean:
-	rm -f *.vba */*.orig *.~* .VimballRecord
+#	rm -f *.vba */*.orig *.~* .VimballRecord .*.un~ */.*.un~ 
+	find . -type f \( -name "*.vba" -o -name "*.orig" -o -name "*.~*" \
+	-o -name ".VimballRecord" -o -name ".*.un~" -o -name "*.sw*" \) \
+	-delete
 
 dist-clean: clean
 

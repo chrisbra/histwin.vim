@@ -8,7 +8,6 @@ Todo List for the histwin plugin
 - Bugfix: Sometimes the histwin window contains invalid data, not sure how to
   reproduce it. Closing and reoping is the workaround.
 - Open old versions in new tab/window
-- When quitting the histwin window, using :q the original buffer might remain
-  unmodifiable
+- Sometime the initial entry is wrong.
 
 # vim:tw=80

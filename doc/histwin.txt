@@ -297,6 +297,7 @@ third line of this document.
                                                              *histwin-history*
 6. histwin History
 
+0.19    - Make sure the first entry will be tagged "Start Editing"
 0.18    - don't leave the buffer in nomodifiable state (reported by Dave
           Doran)
 0.17    - don't hide the initial entry (for Vim < 7.3.005)

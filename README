@@ -1,6 +1,6 @@
 *histwin.txt*  Plugin to browse the undo-tree
 
-Version: 0.17 Sun, 10 Oct 2010 13:54:13 +0200
+Version: 0.19 Mon, 18 Oct 2010 21:03:21 +0200
 Author:  Christian Brabandt <cb@256bit.org>
 Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
            The VIM LICENSE applies to histwin.vim and histwin.txt
@@ -297,6 +297,9 @@ third line of this document.
                                                              *histwin-history*
 6. histwin History
 
+0.19    - Make sure the first entry will be tagged "Start Editing"
+0.18    - don't leave the buffer in nomodifiable state (reported by Dave
+          Doran)
 0.17    - don't hide the initial entry (for Vim < 7.3.005)
 0.16    - more bugfixing. :UB throws errors in Vim before 7.3.005 fix that
 0.15    - Fixed bug when no undo-tree was available (partly by Ben Boeckel.

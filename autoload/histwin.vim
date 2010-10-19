@@ -402,7 +402,7 @@ fun! s:DiffUndoBranch()"{{{1
 	try
 		exe ':u ' . prevchangenr
 		setl modifiable
-	catch /Vim(undo):Undo number \d\+ not found/
+	catch /Vim(undo):E830:Undo number \d\+ not found/
 		call s:WarningMsg("Undo Change not found!")
 		return ''
 	endtry
@@ -530,8 +530,6 @@ fun! s:UndoBranchTag()"{{{1
 				\'time':   tags[key].time+0,
 				\'change': key+0,
 				\'save': tags[key].save+0}
-	"let cdict[key]	 		 = {'tag': tag, 'number': 0, 'time': strftime('%H:%M:%S'), 'change': key, 'save': 0}
-	"let tags[changenr]		 = {'tag': cdict[changenr][tag], 'change': changenr, 'number': tags[key]['number'], 'time': tags[key]['time']}
 	let tags[key]['tag']		 = tag
 	call setbufvar(s:orig_buffer, 'undo_tagdict', tags)
 	call setbufvar(s:orig_buffer, 'undo_customtags', cdict)
@@ -640,14 +638,10 @@ endfun
 
 fun! s:GetUndotreeEntries(entry) "{{{1
 	let b=[]
-	" Return only entries, that have an 'alt' key, which means, an undo branch
-	" started there
 	for item in a:entry
 		call add(b, { 'change': item.seq, 'time': item.time, 'number': 1,
 					\'save': has_key(item, 'save') ? item.save : 0})
 		if has_key(item, "alt")
-			" need to add the last seq. number that was in an alternative
-			" branch, so decrementing item.seq by one.
 			call extend(b,s:GetUndotreeEntries(item.alt))
 		endif
 	endfor
@@ -671,10 +665,6 @@ fun! s:AuCommandClose() "{{{1
 	aug end
 endfun
 
-" Debug function, not needed {{{1
-fun! SortUndoTreeValues(a,b)"{{{2
-	return (a:a.seq)==(a:b.seq) ? 0 : (a:a.seq) > (a:b.seq) ? 1 : -1
-endfun"}}}2
 
 " Modeline and Finish stuff: {{{1
 let &cpo=s:cpo

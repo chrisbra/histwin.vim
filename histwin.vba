@@ -5,9 +5,9 @@ plugin/histwinPlugin.vim	[[[1
 42
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Mon, 18 Oct 2010 21:03:21 +0200
+" Last Change: Wed, 20 Oct 2010 22:16:51 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.19
+" Version:     0.20
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -15,7 +15,7 @@ plugin/histwinPlugin.vim	[[[1
 "              No warranty, express or implied.
 "    *** ***   Use At-Your-Own-Risk!   *** ***
 "
-" GetLatestVimScripts: 2932 12 :AutoInstall: histwin.vim
+" GetLatestVimScripts: 2932 13 :AutoInstall: histwin.vim
 
 " Init:
 if exists("g:loaded_undo_browse") || &cp || &ul == -1
@@ -27,7 +27,7 @@ if v:version < 703
 	finish
 endif
 
-let g:loaded_undo_browse = 0.19
+let g:loaded_undo_browse = 0.20
 let s:cpo                = &cpo
 set cpo&vim
 
@@ -46,12 +46,12 @@ let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdm=syntax
 autoload/histwin.vim	[[[1
-682
+767
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Mon, 18 Oct 2010 21:03:21 +0200
+" Last Change: Wed, 20 Oct 2010 22:16:51 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.19
+" Version:     0.20
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -101,6 +101,9 @@ fun! s:Init()"{{{1
 	" newer than 7.3.005
 	let s:undo_tree_epoch = (v:version > 703 || (v:version == 703 && has("patch005")) ? 1 : 0)
 
+	" Patch preview window
+	let s:undo_tree_preview_aucmd = (exists('g:undo_tree_preview_aucmd') ? g:undo_tree_preview_aucmd : 0)
+
 	if !exists("s:undo_tree_wdth_orig")
 		let s:undo_tree_wdth_orig = s:undo_tree_wdth
 	endif
@@ -127,22 +130,23 @@ fun! s:Init()"{{{1
 		let b:modifiable=&l:ma
 	endif
 
+	" This needs patch 7.3.30. And even with patch 7.3.30 this may not work as
+	" expected. So this is experimental.
 	if !exists("b:undo_customtags")
-    " TODO: Activate, when viminfo patch has been incorporated into vim
-	"
-	"	let fpath=fnameescape(fnamemodify(bufname('.'), ':p'))
-	"	if exists("g:UNDO_CTAGS") && has_key(g:UNDO_CTAGS, fpath)
-	"		let b:undo_customtags = g:UNDO_CTAGS[fpath]
-	"	else
+		let fpath=fnameescape(fnamemodify(bufname('.'), ':p'))
+		if exists("g:UNDO_CTAGS") && has_key(g:UNDO_CTAGS, fpath)
+			let b:undo_customtags = g:UNDO_CTAGS[fpath]
+		else
 			let b:undo_customtags={}
-	"	endif
+		endif
 	endif
 
 	" global variable, that will be stored in the 'viminfo' file
     " TODO: Activate, when viminfo patch has been incorporated into vim
 	" (currently, viminfo only stores numbers and strings, no dictionaries)
-	" delete the '&& 0' to enable
-	if !exists("g:UNDO_CTAGS") && s:undo_tree_epoch && 0
+	" This is enabled with patch 7.3.30
+	if !exists("g:UNDO_CTAGS") && s:undo_tree_epoch && 
+				\ (v:version > 703 || (v:version == 703 && has("patch030")))
 		let filename=fnameescape(fnamemodify(bufname('.'),':p'))
 		let g:UNDO_CTAGS={}
 		let g:UNDO_CTAGS[filename]=b:undo_customtags
@@ -175,7 +179,7 @@ fun! s:ReturnHistList()"{{{1
 	let templist=split(a, '\n')[1:]
 
 
-	if s:undo_tree_epoch
+	if s:undo_tree_epoch  " Vim > 7.3.005
 		if empty(templist)
 			return {}
 		endif
@@ -307,7 +311,7 @@ fun! s:HistWin()"{{{1
 			exe "vert res " . s:undo_tree_wdth
 		endif
 	else
-		execute s:undo_tree_wdth . "vsp " . s:undo_winname
+		execute ':sil! ' . s:undo_tree_wdth . "vsp " . s:undo_winname
 		setl noswapfile buftype=nowrite bufhidden=delete foldcolumn=0 nobuflisted 
 		let undo_buf=bufwinnr("")
 	endif
@@ -425,6 +429,7 @@ fun! s:PrintHelp(...)"{{{1
 		call add(mess, "\" T\t  Tag sel. branch")
 		call add(mess, "\" P\t  Toggle view")
 		call add(mess, "\" D\t  Diff sel. branch")
+		call add(mess, "\" U\t  Preview unif. Diff")
 		call add(mess, "\" R\t  Replay sel. branch")
 		call add(mess, "\" C\t  Clear all tags")
 		call add(mess, "\" Q\t  Quit window")
@@ -451,7 +456,7 @@ fun! s:DiffUndoBranch()"{{{1
 	try
 		exe ':u ' . prevchangenr
 		setl modifiable
-	catch /Vim(undo):Undo number \d\+ not found/
+	catch /Vim(undo):E830:Undo number \d\+ not found/
 		call s:WarningMsg("Undo Change not found!")
 		return ''
 	endtry
@@ -579,8 +584,6 @@ fun! s:UndoBranchTag()"{{{1
 				\'time':   tags[key].time+0,
 				\'change': key+0,
 				\'save': tags[key].save+0}
-	"let cdict[key]	 		 = {'tag': tag, 'number': 0, 'time': strftime('%H:%M:%S'), 'change': key, 'save': 0}
-	"let tags[changenr]		 = {'tag': cdict[changenr][tag], 'change': changenr, 'number': tags[key]['number'], 'time': tags[key]['time']}
 	let tags[key]['tag']		 = tag
 	call setbufvar(s:orig_buffer, 'undo_tagdict', tags)
 	call setbufvar(s:orig_buffer, 'undo_customtags', cdict)
@@ -627,13 +630,13 @@ fun! s:UndoBranch()"{{{1
 		if key==0
 		   " Jump back to initial state
 			"let cmd=':earlier 9999999'
-			:u1 
+			:sil! :u1 
 			if !&modifiable
 				setl modifiable
 			endif
-			norm 1u
+			sil! :norm 1u
 		else
-			exe ':u '.dict[key]['change']
+			exe 'sil! :u '.dict[key]['change']
 		endif
 		if s:undo_tree_nomod && tmod
 			setl nomodifiable
@@ -641,9 +644,9 @@ fun! s:UndoBranch()"{{{1
 			setl modifiable
 		endif
 	catch /E830: Undo number \d\+ not found/
-		exe ':u ' . cur_changenr
+		exe ':sil! :u ' . cur_changenr
 	    call histwin#WarningMsg("Undo Change not found.")
-		return 
+		throw "histwin: abort"
 	endtry
 	" this might have changed, so we return to the old cursor
 	" position. This could still be wrong, so
@@ -659,6 +662,7 @@ fun! s:MapKeys()"{{{1
 	nnoremap <script> <silent> <buffer>	R     :<C-U>call <sid>ReplayUndoBranch()<CR>:silent! :call histwin#UndoBrowse()<CR>
 	nnoremap <script> <silent> <buffer> Q     :<C-U>q<CR>
 	nnoremap <script> <silent> <buffer> Q     :<C-U>silent :call <sid>CloseHistWin()<CR>
+	nnoremap <script> <silent> <buffer> U     :<C-U>silent :call <sid>PreviewDiff()<CR>
 	nnoremap <script> <silent> <buffer> <CR>  :<C-U>silent :call <sid>UndoBranch()<CR>:call histwin#UndoBrowse()<CR>
 	nmap	 <script> <silent> <buffer> T     :call <sid>UndoBranchTag()<CR>:call histwin#UndoBrowse()<CR>
 	nmap     <script> <silent> <buffer>	P     :<C-U>silent :call <sid>ToggleDetail()<CR><C-L>
@@ -673,12 +677,14 @@ fun! histwin#UndoBrowse()"{{{1
 	if &ul != -1
 		call s:Init()
 		let b:undo_win  = s:HistWin()
+		if s:undo_tree_preview_aucmd
+			call s:PreviewAuCmd(1)
+		else
+			call s:PreviewAuCmd(0)
+		endif
 		let b:undo_tagdict=s:ReturnHistList()
 		call s:PrintUndoTree(b:undo_win)
 		call s:MapKeys()
-		if !exists("#histwin#BufUnload")
-			call <sid>AuCommandClose()
-		endif
 	else
 		echoerr "Histwin: Undo has been disabled. Check your undolevel setting!"
 	endif
@@ -689,14 +695,10 @@ endfun
 
 fun! s:GetUndotreeEntries(entry) "{{{1
 	let b=[]
-	" Return only entries, that have an 'alt' key, which means, an undo branch
-	" started there
 	for item in a:entry
 		call add(b, { 'change': item.seq, 'time': item.time, 'number': 1,
 					\'save': has_key(item, 'save') ? item.save : 0})
 		if has_key(item, "alt")
-			" need to add the last seq. number that was in an alternative
-			" branch, so decrementing item.seq by one.
 			call extend(b,s:GetUndotreeEntries(item.alt))
 		endif
 	endfor
@@ -707,33 +709,116 @@ fun! s:CloseHistWin() "{{{1
 	call setbufvar(s:orig_buffer, "&ma", getbufvar(s:orig_buffer, "modifiable"))
 	"exe "au! <buffer=".bufnr('')."> BufUnload *"
 	aug histwin
-		au! BufUnload <buffer>
+		au!
 	augroup end
 	aug! histwin
 	wincmd c
 endfun
 	
-fun! s:AuCommandClose() "{{{1
-	aug histwin
-		au!
-		au BufUnload <buffer> :call <sid>CloseHistWin()
-	aug end
+fun! s:PreviewAuCmd(enable) "{{{1
+	if !exists("#histwin#BufUnload")
+		aug histwin
+			au! BufUnload <buffer> :call <sid>CloseHistWin()
+		aug end
+	endif
+	if a:enable && executable('diff') && !exists("#histwin#CursorHold")
+		aug histwin
+			exe "au! CursorHold <buffer=" . winbufnr(b:undo_win) ."> :call <sid>PreviewDiff()"
+		aug end
+	elseif exists("#histwin#CursorHold") && !a:enable
+		aug histwin
+			au! CursorHold <buffer>
+		augroup end
+		aug! histwin
+	endif
 endfun
 
-" Debug function, not needed {{{1
-fun! SortUndoTreeValues(a,b)"{{{2
-	return (a:a.seq)==(a:b.seq) ? 0 : (a:a.seq) > (a:b.seq) ? 1 : -1
-endfun"}}}2
+func! s:PreviewDiff() "{{{1
+	if !executable('diff')
+	   call histwin#WarningMsg('No diff executable found! Disabling preview Diff')
+	   return
+	else
+	   let s:undo_tree_diffparam = (exists('g:undo_tree_diffparam') ?
+				   \ g:undo_tree_diffparam : 'diff -ua')
+	endif
+	   
+	try
+		let change = s:ReturnBranch()
+	catch /histwin:/
+		call histwin#WarningMsg("Please put the cursor on one list item, when switching to a branch!")
+		return
+	endtry	
+	let file_list = []
+
+	exe bufwinnr(s:orig_buffer) 'wincmd w'
+
+	" This is out best effort, because the line might actually not exist in a
+	" previous state and this seems to confuse winsaveview.
+	let oldpos = winsaveview()
+	wincmd p
+
+	let prevchangenr=<sid>UndoBranch()
+	if empty(prevchangenr)
+		return
+	endif
+	let buffer=getline(1,'$')
+	try
+		exe ':sil! u ' . prevchangenr
+		setl modifiable
+	catch /Vim(undo):Undo number \d\+ not found/
+		call s:WarningMsg("Undo Change not found!")
+		return
+	endtry
+
+	" write buffer contents to a temporary file, so it can be diffed
+	if !exists("s:orig_buf")
+		let s:orig_buf = tempname()
+	endif
+    call writefile(getline(1,'$'), s:orig_buf)
+	call add(file_list, fnamemodify(s:orig_buf, ':p'))
+
+	" contains the old undo version of buffer
+	if !exists("s:temp_buf")
+	   let s:temp_buf = fnamemodify(tempname(), ':p')
+	endif
+	call writefile(buffer, s:temp_buf)
+	call add(file_list, s:temp_buf)
+
+	" contains the diff
+	if !exists("s:diff_buf")
+	   let s:diff_buf = fnamemodify(tempname(), ':p')
+	endif
+	call add(file_list, s:diff_buf)
+	call map(file_list, 'fnameescape(v:val)')
+
+	call system(s:undo_tree_diffparam . ' ' . file_list[1] .
+				\ ' ' . file_list[0] .  '>' . file_list[2])
+
+	if v:shell_error == -1
+		call histwin#WarningMsg("Some error occured when diffing: v:errmsg")
+		return
+	elseif  v:shell_error == 0
+		call histwin#WarningMsg("No differences")
+		exe s:HistWin() . 'wincmd w'
+		return
+	endif
+
+	exe 'sil! pedit ' file_list[2]
+	" restore old view
+	call winrestview(oldpos)
+
+	exe s:HistWin() . 'wincmd p'
+endfun
 
 " Modeline and Finish stuff: {{{1
 let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdl=0
 doc/histwin.txt	[[[1
-380
+426
 *histwin.txt*  Plugin to browse the undo-tree
 
-Version: 0.19 Mon, 18 Oct 2010 21:03:21 +0200
+Version: 0.20 Wed, 20 Oct 2010 22:16:51 +0200
 Author:  Christian Brabandt <cb@256bit.org>
 Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
            The VIM LICENSE applies to histwin.vim and histwin.txt
@@ -752,6 +837,7 @@ Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
    Configuraion Variables...................................|histwin-var|
    Color Configuration......................................|histwin-color|
    Undolevels settings......................................|histwin-ut|
+   Configuring the preview window...........................|histwin-prev|
 5. Feedback.................................................|histwin-feedback|
 6. History..................................................|histwin-history|
 
@@ -790,11 +876,12 @@ like this:
 |" T       Tag sel. branch     |fi                     |
 |" P       Toggle view         |                       |
 |" D       Diff sel. branch    |if true; then          |
+|" U       Preview unif. Diff  |                       |
 |" R       Replay sel. branch  |    dir="${1%/*}"      |
 |" C       Clear all tags      |    file="${1##*/}"    |
 |" Q       Quit window         |    target="${2}/${di  |
 |"                             |    if [ ! -e "${targ  |
-|" Undo-Tree, v0.13            |        mkdir -p "$ta  |
+|" Undo-Tree, v0.20            |        mkdir -p "$ta  |
 |                              |        mv "$1" "$tar  |
 |Nr   Time   Fl  Tag           |                       |
 |1)   Sep 01    /Start Editing/|                       |
@@ -858,13 +945,12 @@ make use of the |viminfo| file, that stores states and search patterns and a
 like for later use. If you include the '!' flag when setting the option, vim
 will also store global variables, which then will be read back when restarting
 Vim (or by use of |rviminfo|). So if you like your tags be stored permanently,
-be sure, that you set your viminfo option correctly.
+be sure, that you set your viminfo option correctly. See also 'viminfo'
 
-(Note, currently, the viminfo file only stores global variables of type
-String, Float or Number, it can't store Dictionaries of Lists. There is a
-patch available, that will hopefully be soon be integrated in Vim mainline.
-So even if you set up your |viminfo| file correctly, the histwin plugin won't
-be able to restore your tags)
+(Note, Storing Dicts and Lists in the viminfo file is supported since Vim
+7.3.30 and is currently an experimental feature of the histwin plugin. Since
+the histwin plugin stores needs to store a nested Dictionary, Vim might still
+fail reading it back correctly)
 
 ==============================================================================
                                                                 *histwin-keys*
@@ -887,6 +973,11 @@ window:
          |earlier|.
 'D'      Start diff mode with the branch that is selected by the cursor.
          (see |08.7|)
+'U'      Open the preview window with a unified diff between the selected
+         branch and the current state of the buffer. (This requires that a
+         diff executable is found in your path, see |histwin-prev| for
+         adjusting the diff-options and also for having the preview-window
+         automatically opened after 'updatetime').
 'R'      Replay all changes, that have been made from the beginning.
          (see |histwin-config| for adjusting the speed)
 'C'      Clear all tags.
@@ -970,6 +1061,38 @@ g:undo_tree_nomod variable in your |.vimrc| like this: >
     :let g:undo_tree_nomod = 0
 
 ------------------------------------------------------------------------------
+                                                                *histwin-prev*
+4.1.6 Configuring diff options, for display in the preview-window
+
+If you press 'U' in the histwin, the |preview-window| will open and display
+a diff (by default in unified diff format) of the selected undo branch and
+your buffer. This requires however, that a diff executable is found in your
+path. The default paramters for the diff executable are: >
+
+    diff -au 
+
+This means, diff will treat all files as text (-a) and create a unified diff
+(with 3 lines of unified context). You can however use your own format. If for
+example you prefer context diffs, set the g:undo_tree_diffparam variable like
+this in your |.vimrc|: >
+
+    let g:undo_tree_diffparam = 'diff -c'
+
+Note, that you need to specify the diff utility explicitly. This enables you
+to even use a different tool then diff (but even then to work correctly,
+you'll need a diff binary in your path).
+
+Additionally, you can configure the histwin plugin to automatically open the
+|preview-window| after 'updatetime' milliseconds have past without a key
+press in Normal mode. To enable this, set the  g:undo_tree_preview_aucmd
+variable in your |.vimrc| to 1 like this: >
+
+    let g:undo_tree_preview_aucmd = 1
+
+To disable this, simply set g:undo_tree_preview_aucmd to zero and Close and
+Reopen the histwin window.
+
+------------------------------------------------------------------------------
 
                                                                *histwin-color*
 4.2 Color configuration
@@ -1030,6 +1153,14 @@ third line of this document.
                                                              *histwin-history*
 6. histwin History
 
+0.20    - Enable storing the tags as Dicionary in .viminfo
+          (this might not work as expected, cause we are storing a nested
+          Dictionary)
+        - Show a diff in the preview window when pressing P (or on autocommand
+          CursorHold if enabled)
+        - a little bit code cleanup (as always ;))
+        - correctly catch E830 and give an error message (reported by D.
+          Fishburn)
 0.19    - Make sure the first entry will be tagged "Start Editing"
 0.18    - don't leave the buffer in nomodifiable state (reported by Dave
           Doran)

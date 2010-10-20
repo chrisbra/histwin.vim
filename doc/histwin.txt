@@ -19,6 +19,7 @@ Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
    Configuraion Variables...................................|histwin-var|
    Color Configuration......................................|histwin-color|
    Undolevels settings......................................|histwin-ut|
+   Configuring the preview window...........................|histwin-prev|
 5. Feedback.................................................|histwin-feedback|
 6. History..................................................|histwin-history|
 
@@ -57,11 +58,12 @@ like this:
 |" T       Tag sel. branch     |fi                     |
 |" P       Toggle view         |                       |
 |" D       Diff sel. branch    |if true; then          |
+|" U       Preview unif. Diff  |                       |
 |" R       Replay sel. branch  |    dir="${1%/*}"      |
 |" C       Clear all tags      |    file="${1##*/}"    |
 |" Q       Quit window         |    target="${2}/${di  |
 |"                             |    if [ ! -e "${targ  |
-|" Undo-Tree, v0.13            |        mkdir -p "$ta  |
+|" Undo-Tree, v0.20            |        mkdir -p "$ta  |
 |                              |        mv "$1" "$tar  |
 |Nr   Time   Fl  Tag           |                       |
 |1)   Sep 01    /Start Editing/|                       |
@@ -125,13 +127,12 @@ make use of the |viminfo| file, that stores states and search patterns and a
 like for later use. If you include the '!' flag when setting the option, vim
 will also store global variables, which then will be read back when restarting
 Vim (or by use of |rviminfo|). So if you like your tags be stored permanently,
-be sure, that you set your viminfo option correctly.
+be sure, that you set your viminfo option correctly. See also 'viminfo'
 
-(Note, currently, the viminfo file only stores global variables of type
-String, Float or Number, it can't store Dictionaries of Lists. There is a
-patch available, that will hopefully be soon be integrated in Vim mainline.
-So even if you set up your |viminfo| file correctly, the histwin plugin won't
-be able to restore your tags)
+(Note, Storing Dicts and Lists in the viminfo file is supported since Vim
+7.3.30 and is currently an experimental feature of the histwin plugin. Since
+the histwin plugin stores needs to store a nested Dictionary, Vim might still
+fail reading it back correctly)
 
 ==============================================================================
                                                                 *histwin-keys*
@@ -154,6 +155,11 @@ window:
          |earlier|.
 'D'      Start diff mode with the branch that is selected by the cursor.
          (see |08.7|)
+'U'      Open the preview window with a unified diff between the selected
+         branch and the current state of the buffer. (This requires that a
+         diff executable is found in your path, see |histwin-prev| for
+         adjusting the diff-options and also for having the preview-window
+         automatically opened after 'updatetime').
 'R'      Replay all changes, that have been made from the beginning.
          (see |histwin-config| for adjusting the speed)
 'C'      Clear all tags.
@@ -237,6 +243,38 @@ g:undo_tree_nomod variable in your |.vimrc| like this: >
     :let g:undo_tree_nomod = 0
 
 ------------------------------------------------------------------------------
+                                                                *histwin-prev*
+4.1.6 Configuring diff options, for display in the preview-window
+
+If you press 'U' in the histwin, the |preview-window| will open and display
+a diff (by default in unified diff format) of the selected undo branch and
+your buffer. This requires however, that a diff executable is found in your
+path. The default paramters for the diff executable are: >
+
+    diff -au 
+
+This means, diff will treat all files as text (-a) and create a unified diff
+(with 3 lines of unified context). You can however use your own format. If for
+example you prefer context diffs, set the g:undo_tree_diffparam variable like
+this in your |.vimrc|: >
+
+    let g:undo_tree_diffparam = 'diff -c'
+
+Note, that you need to specify the diff utility explicitly. This enables you
+to even use a different tool then diff (but even then to work correctly,
+you'll need a diff binary in your path).
+
+Additionally, you can configure the histwin plugin to automatically open the
+|preview-window| after 'updatetime' milliseconds have past without a key
+press in Normal mode. To enable this, set the  g:undo_tree_preview_aucmd
+variable in your |.vimrc| to 1 like this: >
+
+    let g:undo_tree_preview_aucmd = 1
+
+To disable this, simply set g:undo_tree_preview_aucmd to zero and Close and
+Reopen the histwin window.
+
+------------------------------------------------------------------------------
 
                                                                *histwin-color*
 4.2 Color configuration
@@ -297,6 +335,14 @@ third line of this document.
                                                              *histwin-history*
 6. histwin History
 
+0.20    - Enable storing the tags as Dicionary in .viminfo
+          (this might not work as expected, cause we are storing a nested
+          Dictionary)
+        - Show a diff in the preview window when pressing P (or on autocommand
+          CursorHold if enabled)
+        - a little bit code cleanup (as always ;))
+        - correctly catch E830 and give an error message (reported by D.
+          Fishburn)
 0.19    - Make sure the first entry will be tagged "Start Editing"
 0.18    - don't leave the buffer in nomodifiable state (reported by Dave
           Doran)

@@ -52,6 +52,9 @@ fun! s:Init()"{{{1
 	" newer than 7.3.005
 	let s:undo_tree_epoch = (v:version > 703 || (v:version == 703 && has("patch005")) ? 1 : 0)
 
+	" Patch preview window
+	let s:undo_tree_preview_aucmd = (exists('g:undo_tree_preview_aucmd') ? g:undo_tree_preview_aucmd : 0)
+
 	if !exists("s:undo_tree_wdth_orig")
 		let s:undo_tree_wdth_orig = s:undo_tree_wdth
 	endif
@@ -78,22 +81,23 @@ fun! s:Init()"{{{1
 		let b:modifiable=&l:ma
 	endif
 
+	" This needs patch 7.3.30. And even with patch 7.3.30 this may not work as
+	" expected. So this is experimental.
 	if !exists("b:undo_customtags")
-    " TODO: Activate, when viminfo patch has been incorporated into vim
-	"
-	"	let fpath=fnameescape(fnamemodify(bufname('.'), ':p'))
-	"	if exists("g:UNDO_CTAGS") && has_key(g:UNDO_CTAGS, fpath)
-	"		let b:undo_customtags = g:UNDO_CTAGS[fpath]
-	"	else
+		let fpath=fnameescape(fnamemodify(bufname('.'), ':p'))
+		if exists("g:UNDO_CTAGS") && has_key(g:UNDO_CTAGS, fpath)
+			let b:undo_customtags = g:UNDO_CTAGS[fpath]
+		else
 			let b:undo_customtags={}
-	"	endif
+		endif
 	endif
 
 	" global variable, that will be stored in the 'viminfo' file
     " TODO: Activate, when viminfo patch has been incorporated into vim
 	" (currently, viminfo only stores numbers and strings, no dictionaries)
-	" delete the '&& 0' to enable
-	if !exists("g:UNDO_CTAGS") && s:undo_tree_epoch && 0
+	" This is enabled with patch 7.3.30
+	if !exists("g:UNDO_CTAGS") && s:undo_tree_epoch && 
+				\ (v:version > 703 || (v:version == 703 && has("patch030")))
 		let filename=fnameescape(fnamemodify(bufname('.'),':p'))
 		let g:UNDO_CTAGS={}
 		let g:UNDO_CTAGS[filename]=b:undo_customtags
@@ -126,7 +130,7 @@ fun! s:ReturnHistList()"{{{1
 	let templist=split(a, '\n')[1:]
 
 
-	if s:undo_tree_epoch
+	if s:undo_tree_epoch  " Vim > 7.3.005
 		if empty(templist)
 			return {}
 		endif
@@ -258,7 +262,7 @@ fun! s:HistWin()"{{{1
 			exe "vert res " . s:undo_tree_wdth
 		endif
 	else
-		execute s:undo_tree_wdth . "vsp " . s:undo_winname
+		execute ':sil! ' . s:undo_tree_wdth . "vsp " . s:undo_winname
 		setl noswapfile buftype=nowrite bufhidden=delete foldcolumn=0 nobuflisted 
 		let undo_buf=bufwinnr("")
 	endif
@@ -376,6 +380,7 @@ fun! s:PrintHelp(...)"{{{1
 		call add(mess, "\" T\t  Tag sel. branch")
 		call add(mess, "\" P\t  Toggle view")
 		call add(mess, "\" D\t  Diff sel. branch")
+		call add(mess, "\" U\t  Preview unif. Diff")
 		call add(mess, "\" R\t  Replay sel. branch")
 		call add(mess, "\" C\t  Clear all tags")
 		call add(mess, "\" Q\t  Quit window")
@@ -576,13 +581,13 @@ fun! s:UndoBranch()"{{{1
 		if key==0
 		   " Jump back to initial state
 			"let cmd=':earlier 9999999'
-			:u1 
+			:sil! :u1 
 			if !&modifiable
 				setl modifiable
 			endif
-			norm 1u
+			sil! :norm 1u
 		else
-			exe ':u '.dict[key]['change']
+			exe 'sil! :u '.dict[key]['change']
 		endif
 		if s:undo_tree_nomod && tmod
 			setl nomodifiable
@@ -590,9 +595,9 @@ fun! s:UndoBranch()"{{{1
 			setl modifiable
 		endif
 	catch /E830: Undo number \d\+ not found/
-		exe ':u ' . cur_changenr
+		exe ':sil! :u ' . cur_changenr
 	    call histwin#WarningMsg("Undo Change not found.")
-		return 
+		throw "histwin: abort"
 	endtry
 	" this might have changed, so we return to the old cursor
 	" position. This could still be wrong, so
@@ -608,6 +613,7 @@ fun! s:MapKeys()"{{{1
 	nnoremap <script> <silent> <buffer>	R     :<C-U>call <sid>ReplayUndoBranch()<CR>:silent! :call histwin#UndoBrowse()<CR>
 	nnoremap <script> <silent> <buffer> Q     :<C-U>q<CR>
 	nnoremap <script> <silent> <buffer> Q     :<C-U>silent :call <sid>CloseHistWin()<CR>
+	nnoremap <script> <silent> <buffer> U     :<C-U>silent :call <sid>PreviewDiff()<CR>
 	nnoremap <script> <silent> <buffer> <CR>  :<C-U>silent :call <sid>UndoBranch()<CR>:call histwin#UndoBrowse()<CR>
 	nmap	 <script> <silent> <buffer> T     :call <sid>UndoBranchTag()<CR>:call histwin#UndoBrowse()<CR>
 	nmap     <script> <silent> <buffer>	P     :<C-U>silent :call <sid>ToggleDetail()<CR><C-L>
@@ -622,12 +628,14 @@ fun! histwin#UndoBrowse()"{{{1
 	if &ul != -1
 		call s:Init()
 		let b:undo_win  = s:HistWin()
+		if s:undo_tree_preview_aucmd
+			call s:PreviewAuCmd(1)
+		else
+			call s:PreviewAuCmd(0)
+		endif
 		let b:undo_tagdict=s:ReturnHistList()
 		call s:PrintUndoTree(b:undo_win)
 		call s:MapKeys()
-		if !exists("#histwin#BufUnload")
-			call <sid>AuCommandClose()
-		endif
 	else
 		echoerr "Histwin: Undo has been disabled. Check your undolevel setting!"
 	endif
@@ -652,19 +660,106 @@ fun! s:CloseHistWin() "{{{1
 	call setbufvar(s:orig_buffer, "&ma", getbufvar(s:orig_buffer, "modifiable"))
 	"exe "au! <buffer=".bufnr('')."> BufUnload *"
 	aug histwin
-		au! BufUnload <buffer>
+		au!
 	augroup end
 	aug! histwin
 	wincmd c
 endfun
 	
-fun! s:AuCommandClose() "{{{1
-	aug histwin
-		au!
-		au BufUnload <buffer> :call <sid>CloseHistWin()
-	aug end
+fun! s:PreviewAuCmd(enable) "{{{1
+	if !exists("#histwin#BufUnload")
+		aug histwin
+			au! BufUnload <buffer> :call <sid>CloseHistWin()
+		aug end
+	endif
+	if a:enable && executable('diff') && !exists("#histwin#CursorHold")
+		aug histwin
+			exe "au! CursorHold <buffer=" . winbufnr(b:undo_win) ."> :call <sid>PreviewDiff()"
+		aug end
+	elseif exists("#histwin#CursorHold") && !a:enable
+		aug histwin
+			au! CursorHold <buffer>
+		augroup end
+		aug! histwin
+	endif
 endfun
 
+func! s:PreviewDiff() "{{{1
+	if !executable('diff')
+	   call histwin#WarningMsg('No diff executable found! Disabling preview Diff')
+	   return
+	else
+	   let s:undo_tree_diffparam = (exists('g:undo_tree_diffparam') ?
+				   \ g:undo_tree_diffparam : 'diff -ua')
+	endif
+	   
+	try
+		let change = s:ReturnBranch()
+	catch /histwin:/
+		call histwin#WarningMsg("Please put the cursor on one list item, when switching to a branch!")
+		return
+	endtry	
+	let file_list = []
+
+	exe bufwinnr(s:orig_buffer) 'wincmd w'
+
+	" This is out best effort, because the line might actually not exist in a
+	" previous state and this seems to confuse winsaveview.
+	let oldpos = winsaveview()
+	wincmd p
+
+	let prevchangenr=<sid>UndoBranch()
+	if empty(prevchangenr)
+		return
+	endif
+	let buffer=getline(1,'$')
+	try
+		exe ':sil! u ' . prevchangenr
+		setl modifiable
+	catch /Vim(undo):Undo number \d\+ not found/
+		call s:WarningMsg("Undo Change not found!")
+		return
+	endtry
+
+	" write buffer contents to a temporary file, so it can be diffed
+	if !exists("s:orig_buf")
+		let s:orig_buf = tempname()
+	endif
+    call writefile(getline(1,'$'), s:orig_buf)
+	call add(file_list, fnamemodify(s:orig_buf, ':p'))
+
+	" contains the old undo version of buffer
+	if !exists("s:temp_buf")
+	   let s:temp_buf = fnamemodify(tempname(), ':p')
+	endif
+	call writefile(buffer, s:temp_buf)
+	call add(file_list, s:temp_buf)
+
+	" contains the diff
+	if !exists("s:diff_buf")
+	   let s:diff_buf = fnamemodify(tempname(), ':p')
+	endif
+	call add(file_list, s:diff_buf)
+	call map(file_list, 'fnameescape(v:val)')
+
+	call system(s:undo_tree_diffparam . ' ' . file_list[1] .
+				\ ' ' . file_list[0] .  '>' . file_list[2])
+
+	if v:shell_error == -1
+		call histwin#WarningMsg("Some error occured when diffing: v:errmsg")
+		return
+	elseif  v:shell_error == 0
+		call histwin#WarningMsg("No differences")
+		exe s:HistWin() . 'wincmd w'
+		return
+	endif
+
+	exe 'sil! pedit ' file_list[2]
+	" restore old view
+	call winrestview(oldpos)
+
+	exe s:HistWin() . 'wincmd p'
+endfun
 
 " Modeline and Finish stuff: {{{1
 let &cpo=s:cpo

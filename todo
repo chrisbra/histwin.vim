@@ -5,9 +5,13 @@ Todo List for the histwin plugin
   undotree() function? (currently we are cheating and take only the items from
   the undolist into account)
 - make tags permanent (needs patch for Vim)
+  (should be done with 0.20)
 - Bugfix: Sometimes the histwin window contains invalid data, not sure how to
   reproduce it. Closing and reoping is the workaround.
 - Open old versions in new tab/window
 - Sometime the initial entry is wrong.
+  (should be done with 0.20)
+- Is changenr() not the right tool, to determine where one stays in the undotree?
+  (http://www.reddit.com/r/vim/comments/dszuz/gundo_my_little_undo_tree_visualization_plugin/)
 
 # vim:tw=80

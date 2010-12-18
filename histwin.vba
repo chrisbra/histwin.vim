@@ -2,12 +2,12 @@
 UseVimball
 finish
 plugin/histwinPlugin.vim	[[[1
-42
-" histwin.vim - Vim global plugin for browsing the undo tree
+45
+" histwin.vim - Vim global plugin for browsing the undo tree {{{1
 " -------------------------------------------------------------
-" Last Change: Wed, 20 Oct 2010 22:16:51 +0200
+" Last Change: Sat, 18 Dec 2010 08:54:06 +0100
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.20
+" Version:     0.21
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -15,33 +15,36 @@ plugin/histwinPlugin.vim	[[[1
 "              No warranty, express or implied.
 "    *** ***   Use At-Your-Own-Risk!   *** ***
 "
-" GetLatestVimScripts: 2932 13 :AutoInstall: histwin.vim
+" GetLatestVimScripts: 2932 14 :AutoInstall: histwin.vim
 
-" Init:
+" Init: {{{2
 if exists("g:loaded_undo_browse") || &cp || &ul == -1
   finish
 endif
 
-if v:version < 703
-	call histwin#WarningMsg("This plugin requires Vim 7.3 or higher")
-	finish
-endif
-
-let g:loaded_undo_browse = 0.20
+let g:loaded_undo_browse = 0.21
 let s:cpo                = &cpo
 set cpo&vim
 
-" User_Command:
+fun! WarningMsg(msg) "{{{2
+	let msg = "histwin: " . a:msg
+	echomsg msg
+	let v:errmsg = msg
+endfun "}}}
+" Check version "{{{2
+if v:version < 703
+	call WarningMsg("This plugin requires Vim 7.3 or higher")
+	finish
+endif
+" User_Command: {{{2
 if exists(":UB") != 2
 	com -nargs=0 UB :call histwin#UndoBrowse()
 else
-	call histwin#WarningMsg("UB is already defined. May be by another Plugin?")
-endif
-
-" ChangeLog:
+	call WarningMsg("UB is already defined. May be by another Plugin?")
+endif " }}}
+" ChangeLog: {{{2
 " see :h histwin-history
-
-" Restore:
+" Restore: {{{2
 let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdm=syntax
@@ -49,9 +52,9 @@ autoload/histwin.vim	[[[1
 767
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Wed, 20 Oct 2010 22:16:51 +0200
+" Last Change: Sat, 18 Dec 2010 08:54:06 +0100
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.20
+" Version:     0.21
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -815,18 +818,17 @@ let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdl=0
 doc/histwin.txt	[[[1
-426
-*histwin.txt*  Plugin to browse the undo-tree
+428
+*histwin.txt*	For Vim version 7.3	Last change: 2010 Nov. 18
 
-Version: 0.20 Wed, 20 Oct 2010 22:16:51 +0200
 Author:  Christian Brabandt <cb@256bit.org>
-Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
+Copyright: (c) 2009, 2010 by Christian Brabandt           *histwin-copyright*
            The VIM LICENSE applies to histwin.vim and histwin.txt
            (see |copyright|) except use histwin instead of "Vim".
            NO WARRANTY, EXPRESS OR IMPLIED.  USE AT-YOUR-OWN-RISK.
 
-==============================================================================
-1. Contents                                                  *histwin-contents*
+=============================================================================
+1. Contents                                                 *histwin-contents*
 
 1. Contents.................................................|histwin-contents|
 2. Functionality............................................|histwin-plugin|
@@ -841,8 +843,8 @@ Copyright: (c) 2009, 2010 by Christian Brabandt             *histwin-copyright*
 5. Feedback.................................................|histwin-feedback|
 6. History..................................................|histwin-history|
 
-==============================================================================
-                                                        *histwin-plugin* *histwin*
+=============================================================================
+                                                    *histwin-plugin* *histwin*
 2. Functionality
 
 This plugin was written to allow an easy way of browsing the |undo-tree|, that
@@ -858,38 +860,38 @@ any of these states. It opens a new window, which contains all available
 states and using this plugin allows you to tag a previous change or go back to
 a particular state.
 
-                                                        *histwin-browse* *:UB*
+                                                       *histwin-browse* *:UB*
 2.1 Opening the Undo-Tree Window
 
 By default you can open the Undo-Tree Window by issuing :UB (Mnemonic:
 UndoBrowse). If you do this, you will see a window that looks
 like this:
 
-+------------------------------------------------------+
-|Undo-Tree: FILENAME           |#!/bin/bash            |
-|======================        |                       |
-|                              |                       |
-|" actv. keys in this window   |if [ $# -ne 2 ];  the  |
-|" I toggles help screen       |    echo "Name: $0: arg|
-|" <Enter> goto undo branch    |    echo               |
-|" <C-L>   Update view         |    exit 1             |
-|" T       Tag sel. branch     |fi                     |
-|" P       Toggle view         |                       |
-|" D       Diff sel. branch    |if true; then          |
-|" U       Preview unif. Diff  |                       |
-|" R       Replay sel. branch  |    dir="${1%/*}"      |
-|" C       Clear all tags      |    file="${1##*/}"    |
-|" Q       Quit window         |    target="${2}/${di  |
-|"                             |    if [ ! -e "${targ  |
-|" Undo-Tree, v0.20            |        mkdir -p "$ta  |
-|                              |        mv "$1" "$tar  |
-|Nr   Time   Fl  Tag           |                       |
-|1)   Sep 01    /Start Editing/|                       |
-|2)   Sep 01 !  /First draft/  |                       |
-|3) 23:01:22                   |                       |
-|4) 23:02:57 *  /Release 1/    |                       |
-|5) 23:05:04                   |                       |
-+------------------------------------------------------+
++------------------------------------------------------+`
+|Undo-Tree: FILENAME           |#!/bin/bash            |`
+|======================        |                       |`
+|                              |                       |`
+|" actv. keys in this window   |if [ $# -ne 2 ];  the  |`
+|" I toggles help screen       |    echo "Name: $0: arg|`
+|" <Enter> goto undo branch    |    echo               |`
+|" <C-L>   Update view         |    exit 1             |`
+|" T       Tag sel. branch     |fi                     |`
+|" P       Toggle view         |                       |`
+|" D       Diff sel. branch    |if true; then          |`
+|" U       Preview unif. Diff  |                       |`
+|" R       Replay sel. branch  |    dir="${1%/*}"      |`
+|" C       Clear all tags      |    file="${1##*/}"    |`
+|" Q       Quit window         |    target="${2}/${di  |`
+|"                             |    if [ ! -e "${targ  |`
+|" Undo-Tree, v0.20            |        mkdir -p "$ta  |`
+|                              |        mv "$1" "$tar  |`
+|Nr   Time   Fl  Tag           |                       |`
+|1)   Sep 01    /Start Editing/|                       |`
+|2)   Sep 01 !  /First draft/  |                       |`
+|3) 23:01:22                   |                       |`
+|4) 23:02:57 *  /Release 1/    |                       |`
+|5) 23:05:04                   |                       |`
++------------------------------------------------------+`
 
 This shows an extract of a sample file on the right side. The window on the
 left side, contains an overview of all available states that are known for
@@ -953,7 +955,7 @@ the histwin plugin stores needs to store a nested Dictionary, Vim might still
 fail reading it back correctly)
 
 ==============================================================================
-                                                                *histwin-keys*
+                                                               *histwin-keys*
 3. Keybindings
 
 By default, the following keys are active in Normal mode in the Undo-Tree
@@ -1136,7 +1138,7 @@ to a much higher value, like 10,000 or even higher. This will however increase
 the memory usage quite a lot.
 
 ==============================================================================
-                                                            *histwin-feedback*
+                                                           *histwin-feedback*
 5. Feedback
 
 Feedback is always welcome. If you like the plugin, please rate it at the
@@ -1150,9 +1152,12 @@ Please don't hesitate to report any bugs to the maintainer, mentioned in the
 third line of this document.
 
 ==============================================================================
-                                                             *histwin-history*
+                                                            *histwin-history*
 6. histwin History
 
+0.21    - more standard like help files
+        - make sure, the autoload script is only called when needed
+	  (and not on startup)
 0.20    - Enable storing the tags as Dicionary in .viminfo
           (this might not work as expected, cause we are storing a nested
           Dictionary)
@@ -1170,8 +1175,8 @@ third line of this document.
           Thanks!)
         - More error handling (when the cursor is not on a list item)
         - Commenting out the entry to store the histdict in a global variable,
-          that should be written to the .viminfo file (but is not yet supported
-          by plain vim)
+          that should be written to the .viminfo file (but is not yet
+          supported by plain vim)
 0.14    - don't fix the width of the histwin window
         - now use the undotree() function by default (if patch 7.3.005 is
           included)
@@ -1241,4 +1246,4 @@ third line of this document.
         - allow switching to initial load state, before
           buffer was edited
 ==============================================================================
-vim:tw=78:ts=8:ft=help:et
+vim:tw=78:ts=8:ft=help:norl:

@@ -1,4 +1,4 @@
-" histwin.vim - Vim global plugin for browsing the undo tree
+" histwin.vim - Vim global plugin for browsing the undo tree {{{1
 " -------------------------------------------------------------
 " Last Change: Wed, 20 Oct 2010 22:16:51 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
@@ -12,31 +12,34 @@
 "
 " GetLatestVimScripts: 2932 13 :AutoInstall: histwin.vim
 
-" Init:
+" Init: {{{2
 if exists("g:loaded_undo_browse") || &cp || &ul == -1
   finish
-endif
-
-if v:version < 703
-	call histwin#WarningMsg("This plugin requires Vim 7.3 or higher")
-	finish
 endif
 
 let g:loaded_undo_browse = 0.20
 let s:cpo                = &cpo
 set cpo&vim
 
-" User_Command:
+fun! WarningMsg(msg) "{{{2
+	let msg = "histwin: " . a:msg
+	echomsg msg
+	let v:errmsg = msg
+endfun "}}}
+" Check version "{{{2
+if v:version < 703
+	call WarningMsg("This plugin requires Vim 7.3 or higher")
+	finish
+endif
+" User_Command: {{{2
 if exists(":UB") != 2
 	com -nargs=0 UB :call histwin#UndoBrowse()
 else
-	call histwin#WarningMsg("UB is already defined. May be by another Plugin?")
-endif
-
-" ChangeLog:
+	call WarningMsg("UB is already defined. May be by another Plugin?")
+endif " }}}
+" ChangeLog: {{{2
 " see :h histwin-history
-
-" Restore:
+" Restore: {{{2
 let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdm=syntax

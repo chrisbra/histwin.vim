@@ -335,6 +335,8 @@ third line of this document.
 6. histwin History
 
 0.21    - more standard like help files
+        - make sure, the autoload script is only called when needed
+	  (and not on startup)
 0.20    - Enable storing the tags as Dicionary in .viminfo
           (this might not work as expected, cause we are storing a nested
           Dictionary)

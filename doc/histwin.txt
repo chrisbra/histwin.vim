@@ -46,31 +46,31 @@ By default you can open the Undo-Tree Window by issuing :UB (Mnemonic:
 UndoBrowse). If you do this, you will see a window that looks
 like this:
 
-+------------------------------------------------------+`
-|Undo-Tree: FILENAME           |#!/bin/bash            |`
-|======================        |                       |`
-|                              |                       |`
-|" actv. keys in this window   |if [ $# -ne 2 ];  the  |`
-|" I toggles help screen       |    echo "Name: $0: arg|`
-|" <Enter> goto undo branch    |    echo               |`
-|" <C-L>   Update view         |    exit 1             |`
-|" T       Tag sel. branch     |fi                     |`
-|" P       Toggle view         |                       |`
-|" D       Diff sel. branch    |if true; then          |`
-|" U       Preview unif. Diff  |                       |`
-|" R       Replay sel. branch  |    dir="${1%/*}"      |`
-|" C       Clear all tags      |    file="${1##*/}"    |`
-|" Q       Quit window         |    target="${2}/${di  |`
-|"                             |    if [ ! -e "${targ  |`
-|" Undo-Tree, v0.20            |        mkdir -p "$ta  |`
-|                              |        mv "$1" "$tar  |`
-|Nr   Time   Fl  Tag           |                       |`
-|1)   Sep 01    /Start Editing/|                       |`
-|2)   Sep 01 !  /First draft/  |                       |`
-|3) 23:01:22                   |                       |`
-|4) 23:02:57 *  /Release 1/    |                       |`
-|5) 23:05:04                   |                       |`
-+------------------------------------------------------+`
++------------------------------------------------------+ `
+|Undo-Tree: FILENAME           |#!/bin/bash            | `
+|======================        |                       | `
+|                              |                       | `
+|" actv. keys in this window   |if [ $# -ne 2 ];  the  | `
+|" I toggles help screen       |    echo "Name: $0: arg| `
+|" <Enter> goto undo branch    |    echo               | `
+|" <C-L>   Update view         |    exit 1             | `
+|" T       Tag sel. branch     |fi                     | `
+|" P       Toggle view         |                       | `
+|" D       Diff sel. branch    |if true; then          | `
+|" U       Preview unif. Diff  |                       | `
+|" R       Replay sel. branch  |    dir="${1%/*}"      | `
+|" C       Clear all tags      |    file="${1##*/}"    | `
+|" Q       Quit window         |    target="${2}/${di  | `
+|"                             |    if [ ! -e "${targ  | `
+|" Undo-Tree, v0.20            |        mkdir -p "$ta  | `
+|                              |        mv "$1" "$tar  | `
+|Nr   Time   Fl  Tag           |                       | `
+|1)   Sep 01    /Start Editing/|                       | `
+|2)   Sep 01 !  /First draft/  |                       | `
+|3) 23:01:22                   |                       | `
+|4) 23:02:57 *  /Release 1/    |                       | `
+|5) 23:05:04                   |                       | `
++------------------------------------------------------+ `
 
 This shows an extract of a sample file on the right side. The window on the
 left side, contains an overview of all available states that are known for

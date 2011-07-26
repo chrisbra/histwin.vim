@@ -923,9 +923,9 @@ endfun
 
 fun! s:InitSigns() "{{{1
 	if !exists("s:signs_defined")
-		sign define Histwin_Add text=+ texthl=DiffAdd linehl=DiffAdd
-		sign define Histwin_Del text=- texthl=DiffDelete linehl=DiffDelete
-		sign define Histwin_Chg text=* texthl=DiffChange linehl=DiffChange
+		sign define Histwin_Add text=+ texthl=DiffAdd "linehl=DiffAdd
+		sign define Histwin_Del text=- texthl=DiffDelete "linehl=DiffDelete
+		sign define Histwin_Chg text=* texthl=DiffChange "linehl=DiffChange
 		let s:signs_defined=1
 	endif
 endfunc

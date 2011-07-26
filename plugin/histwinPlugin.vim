@@ -31,9 +31,17 @@ if v:version < 703
 	call WarningMsg("This plugin requires Vim 7.3 or higher")
 	finish
 endif
+
+" Enable displaying the differences with Signs
+if exists("g:undo_tree_highlight_changes") &&
+			\ g:undo_tree_highlight_changes == 1
+	call histwin#PreviewAuCmd(1)
+endif
+
 " User_Command: {{{2
 if exists(":UB") != 2
 	com -nargs=0 UB :call histwin#UndoBrowse()
+	com -nargs=0 Histwin :UB
 else
 	call WarningMsg("UB is already defined. May be by another Plugin?")
 endif " }}}

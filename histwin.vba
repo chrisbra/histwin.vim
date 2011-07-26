@@ -2,7 +2,7 @@
 UseVimball
 finish
 plugin/histwinPlugin.vim	[[[1
-45
+53
 " histwin.vim - Vim global plugin for browsing the undo tree {{{1
 " -------------------------------------------------------------
 " Last Change: Sat, 18 Dec 2010 08:54:06 +0100
@@ -36,9 +36,17 @@ if v:version < 703
 	call WarningMsg("This plugin requires Vim 7.3 or higher")
 	finish
 endif
+
+" Enable displaying the differences with Signs
+if exists("g:undo_tree_highlight_changes") &&
+			\ g:undo_tree_highlight_changes == 1
+	call histwin#PreviewAuCmd(1)
+endif
+
 " User_Command: {{{2
 if exists(":UB") != 2
 	com -nargs=0 UB :call histwin#UndoBrowse()
+	com -nargs=0 Histwin :UB
 else
 	call WarningMsg("UB is already defined. May be by another Plugin?")
 endif " }}}
@@ -49,7 +57,7 @@ let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdm=syntax
 autoload/histwin.vim	[[[1
-767
+1040
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
 " Last Change: Sat, 18 Dec 2010 08:54:06 +0100
@@ -76,10 +84,11 @@ set cpo&vim
 " put in your .vimrc
 " :let g:undo_tree_help=0
 let s:undo_help=((exists("s:undo_help") ? s:undo_help : 1) )
-" This is a little bit confusing. If the variable is set to zero and the 
+" This is a little bit confusing. If the variable is set to zero then the
 " detailed view will be shown. If it is set to 1 the short view will be
 " displayed.
-let s:undo_tree_dtl   = (exists('g:undo_tree_dtl')   ? g:undo_tree_dtl   :   (exists("s:undo_tree_dtl") ? s:undo_tree_dtl : 1))
+let s:undo_tree_dtl   = (exists('g:undo_tree_dtl')   ? g:undo_tree_dtl  
+			\:   (exists("s:undo_tree_dtl") ? s:undo_tree_dtl : 1))
 
 " Functions:
 " 
@@ -93,19 +102,28 @@ fun! s:Init()"{{{1
 	" speed, with which the replay will be played
 	" (duration between each change in milliseconds)
 	" set :let g:undo_tree_speed=250 in your .vimrc to override
-	let s:undo_tree_speed = (exists('g:undo_tree_speed') ? g:undo_tree_speed : 100)
+	let s:undo_tree_speed = (exists('g:undo_tree_speed') ?
+				\g:undo_tree_speed : 100)
 	" Set prefered width
-	let s:undo_tree_wdth  = (exists('g:undo_tree_wdth')  ? g:undo_tree_wdth  :  30)
+	let s:undo_tree_wdth  = (exists('g:undo_tree_wdth')  ?
+				\g:undo_tree_wdth  :  30)
 	" Show detail with Change nr?
-	let s:undo_tree_dtl   = (exists('g:undo_tree_dtl')   ? g:undo_tree_dtl   :  s:undo_tree_dtl)
+	let s:undo_tree_dtl   = (exists('g:undo_tree_dtl')   ?
+				\g:undo_tree_dtl   :  s:undo_tree_dtl)
 	" Set old versions nomodifiable
-	let s:undo_tree_nomod = (exists('g:undo_tree_nomod') ? g:undo_tree_nomod :   1)
+	let s:undo_tree_nomod = (exists('g:undo_tree_nomod') ?
+				\g:undo_tree_nomod :   1)
 	" When switching to the undotree() function, be sure to use a Vim that is
 	" newer than 7.3.005
-	let s:undo_tree_epoch = (v:version > 703 || (v:version == 703 && has("patch005")) ? 1 : 0)
+	let s:undo_tree_epoch = (v:version > 703 ||
+				\(v:version == 703 && has("patch005")) ? 1 : 0)
 
 	" Patch preview window
-	let s:undo_tree_preview_aucmd = (exists('g:undo_tree_preview_aucmd') ? g:undo_tree_preview_aucmd : 0)
+	let s:undo_tree_preview_aucmd = (exists('g:undo_tree_preview_aucmd') ?
+				\g:undo_tree_preview_aucmd : 0)
+
+	let s:undo_tree_signs = (exists('g:undo_tree_highlight_changes') ?
+				\g:undo_tree_highlight_changes : 0)
 
 	if !exists("s:undo_tree_wdth_orig")
 		let s:undo_tree_wdth_orig = s:undo_tree_wdth
@@ -137,7 +155,8 @@ fun! s:Init()"{{{1
 	" expected. So this is experimental.
 	if !exists("b:undo_customtags")
 		let fpath=fnameescape(fnamemodify(bufname('.'), ':p'))
-		if exists("g:UNDO_CTAGS") && has_key(g:UNDO_CTAGS, fpath)
+		if exists("g:UNDO_CTAGS") && type(g:UNDO_CTAGS) == type({})
+					\ && has_key(g:UNDO_CTAGS, fpath)
 			let b:undo_customtags = g:UNDO_CTAGS[fpath]
 		else
 			let b:undo_customtags={}
@@ -160,7 +179,8 @@ fun! s:Init()"{{{1
 			endif
 		endif
 	endif
-endfun "}}}
+endfun 
+
 fun! histwin#WarningMsg(msg)"{{{1
 	echohl WarningMsg
 	let msg = "histwin: " . a:msg
@@ -171,8 +191,8 @@ fun! histwin#WarningMsg(msg)"{{{1
 	endif
 	echohl Normal
 	let v:errmsg = msg
-endfun "}}}
-fun! s:ReturnHistList()"{{{1
+endfun 
+fun! s:ReturnHistList() "{{{1
 	let histdict={}
 	let customtags=copy(b:undo_customtags)
 	redir => a
@@ -201,6 +221,9 @@ fun! s:ReturnHistList()"{{{1
 		let re = '^\%(' . join(templist, '\|') . '\)$'
 		let first = ut[0]
 		let first.tag='Start Editing'
+
+		" We need the complete list, if we want to use the signs
+		" or display the detailed list
 		if s:undo_tree_dtl
 			call filter(ut, 'v:val.change =~ re')
 		else
@@ -230,7 +253,8 @@ fun! s:ReturnHistList()"{{{1
 		" easy way to obtain the state of the first change,
 		" so we will be inserting a dummy entry and need to
 		" check later, if this is called.
-		let histdict[0] = {'number': 1, 'change': 0, 'time': '00:00:00', 'tag': 'Start Editing' ,'save':0}
+		let histdict[0] = {'number': 1, 'change': 0,
+					\'time': '00:00:00', 'tag': 'Start Editing' ,'save':0}
 		if !empty(templist)
 			let first_seq = matchstr(templist[0], '^\s\+\zs\d\+')+0
 
@@ -252,7 +276,8 @@ fun! s:ReturnHistList()"{{{1
 				else
 					let tag=''
 				endif
-				let histdict[change]={'change': change, 'number': nr, 'time': time, 'tag': tag, 'save': save}
+				let histdict[change]={'change': change, 'number': nr,
+							\'time': time, 'tag': tag, 'save': save}
 				let i+=1
 			endfor
 			unlet item
@@ -267,11 +292,11 @@ fun! s:ReturnHistList()"{{{1
 	return extend(histdict,customtags,"force")
 endfun
 
-fun! s:SortValues(a,b)"{{{1
+fun! s:SortValues(a,b) "{{{1
 	return (a:a.change)==(a:b.change) ? 0 : (a:a.change) > (a:b.change) ? 1 : -1
 endfun
 
-fun! s:MaxTagsLen()"{{{1
+fun! s:MaxTagsLen() "{{{1
 	let tags = getbufvar(s:orig_buffer, 'undo_customtags')
 	let d=[]
 	" return a list of all tags
@@ -282,7 +307,7 @@ fun! s:MaxTagsLen()"{{{1
 	return max(d)
 endfu 
 
-fun! s:HistWin()"{{{1
+fun! s:HistWin() "{{{1
 	let undo_buf=bufwinnr('^'.s:undo_winname.'$')
 	" Adjust size so that each tag will fit on the screen
 	" 16 is just the default length, that should fit within 30 chars
@@ -296,8 +321,10 @@ fun! s:HistWin()"{{{1
     let rd = (!s:undo_tree_dtl ? 20 : 13)
 
 	if maxlen > 16
-		let s:undo_tree_wdth = (s:undo_tree_wdth + maxlen - rd) % s:undo_tree_wdth_max
-		let s:undo_tree_wdth = (s:undo_tree_wdth < s:undo_tree_wdth_orig ? s:undo_tree_wdth_orig : s:undo_tree_wdth)
+		let s:undo_tree_wdth = (s:undo_tree_wdth + maxlen - rd)
+					\% s:undo_tree_wdth_max
+		let s:undo_tree_wdth = (s:undo_tree_wdth < s:undo_tree_wdth_orig ?
+					\s:undo_tree_wdth_orig : s:undo_tree_wdth)
 	endif
 	" for the detail view, we need more space
 	if (!s:undo_tree_dtl) 
@@ -305,9 +332,6 @@ fun! s:HistWin()"{{{1
 	else
 		let s:undo_tree_wdth = s:undo_tree_wdth_orig
 	endif
-	"if (maxlen + (!s:undo_tree_dtl*7)) > 13 + (!s:undo_tree_dtl*7)
-	"	let s:undo_tree_wdth+=(s:undo_tree_wdth + maxlen) % s:undo_tree_wdth_max
-	"endif
 	if undo_buf != -1
 		exe undo_buf . 'wincmd w'
 		if winwidth(0) != s:undo_tree_wdth
@@ -322,13 +346,14 @@ fun! s:HistWin()"{{{1
 	return undo_buf
 endfun
 
-fun! s:PrintUndoTree(winnr)"{{{1
-	let bufname     = (empty(bufname(s:orig_buffer)) ? '[No Name]' : fnamemodify(bufname(s:orig_buffer),':t'))
+fun! s:PrintUndoTree(winnr) "{{{1
+	let bufname     = (empty(bufname(s:orig_buffer)) ? '[No Name]' :
+				\fnamemodify(bufname(s:orig_buffer),':t'))
 	let changenr    = changenr()
 	let histdict    = b:undo_tagdict
 	exe a:winnr . 'wincmd w'
 	setl modifiable
-	" silent because :%d outputs this message:
+	" silent because :%d _ outputs this message:
 	" --No lines in buffer--
 	silent %d _
 	call setline(1,'Undo-Tree: '.bufname)
@@ -336,9 +361,12 @@ fun! s:PrintUndoTree(winnr)"{{{1
 	put =''
 	call s:PrintHelp(s:undo_help)
 	if s:undo_tree_dtl
-		call append('$', printf("%-*s %-8s %2s %s", strlen(len(histdict)), "Nr", "  Time", "Fl", "Tag"))
+		call append('$', printf("%-*s %-8s %2s %s", strlen(len(histdict)), "Nr",
+			\"  Time", "Fl", "Tag"))
 	else
-		call append('$', printf("%-*s %-9s %-6s %-4s %2s %s", strlen(len(histdict)), "Nr", "  Time", "Change", "Save", "Fl", "Tag"))
+		call append('$', printf("%-*s %-9s %-6s %-4s %2s %s",
+			\strlen(len(histdict)), "Nr", "  Time", "Change", "Save",
+			\"Fl", "Tag"))
 	endif
 
 	if len(histdict) == 0
@@ -364,7 +392,8 @@ fun! s:PrintUndoTree(winnr)"{{{1
 				\ printf("%0*d) %8s %6d %4d %1s %s", 
 				\ strlen(len(histdict)), i, 
 				\ (s:undo_tree_epoch ?
-				\ localtime() - line['time'] > 24*3600 ? strftime('%b %d', line['time']) : strftime('%H:%M:%S', line['time']) :
+				\ localtime() - line['time'] > 24*3600 ? strftime('%b %d',
+					\ line['time']) : strftime('%H:%M:%S', line['time']) :
 				\ line['time']),
 				\ line['change'], line['save'], 
 				\ (line['number']<0 ? '!' : ' '),
@@ -374,7 +403,8 @@ fun! s:PrintUndoTree(winnr)"{{{1
 				\ printf("%0*d) %8s %1s %s", 
 				\ strlen(len(histdict)), i,
 				\ (s:undo_tree_epoch ?
-				\ localtime() - line['time'] > 24*3600 ? strftime('%b %d', line['time']) : strftime('%H:%M:%S', line['time']) :
+				\ localtime() - line['time'] > 24*3600 ? strftime('%b %d',
+				\ line['time']) : strftime('%H:%M:%S', line['time']) :
 				\ line['time']),
 				\ (line['number']<0 ? '!' : (line['save'] ? '*' : ' ')),
 				\ tag))
@@ -382,7 +412,8 @@ fun! s:PrintUndoTree(winnr)"{{{1
 	"			call append('$', 
 	"			\ printf("%0*d) %8s %1s%1s %s %s", 
 	"			\ strlen(len(histdict)), i,
-	"			\ localtime() - line['time'] > 24*3600 ? strftime('%b %d', line['time']) : strftime('%H:%M:%S', line['time']),
+	"			\ localtime() - line['time'] > 24*3600 ? strftime('%b %d',
+	"			\ line['time']) : strftime('%H:%M:%S', line['time']),
 	"			\(line['save'] ? '*' : ' '),
 	"			\(line['number']<0 ? '!' : ' '),
 	"			\ tag, line['change']))
@@ -423,7 +454,7 @@ fun! s:HilightLines(changenr)"{{{1
 	hi def link UBKey            SpecialKey
 endfun
 
-fun! s:PrintHelp(...)"{{{1
+fun! s:PrintHelp(...) "{{{1
 	let mess=['" actv. keys in this window']
 	call add(mess, '" I toggles help screen')
 	if a:1
@@ -447,7 +478,8 @@ fun! s:DiffUndoBranch()"{{{1
 	try
 		let change = s:ReturnBranch()
 	catch /histwin:/
-		call histwin#WarningMsg("Please put the cursor on one list item, when switching to a branch!")
+		call histwin#WarningMsg("Please put the cursor on one list item,
+					\when switching to a branch!")
 		return
 	endtry	
 	let prevchangenr=<sid>UndoBranch()
@@ -487,11 +519,12 @@ fun! s:GetLineNr(changenr,list) "{{{1
 	return -1
 endfun
 
-fun! s:ReplayUndoBranch()"{{{1
+fun! s:ReplayUndoBranch() "{{{1
 	try
 		let change    =    s:ReturnBranch()
 	catch /histwin:/
-		call histwin#WarningMsg("Please put the cursor on one list item, when replaying a branch!")
+		call histwin#WarningMsg("Please put the cursor on one list item,
+					\when replaying a branch!")
 		return
     endtry	
 
@@ -532,7 +565,7 @@ fun! s:ReplayUndoBranch()"{{{1
 	endtry
 endfun
 
-fun! s:ReturnBranch()"{{{1
+fun! s:ReturnBranch() "{{{1
 	let a=matchstr(getline('.'), '^0*\zs\d\+\ze')+0
 	if a == -1
 		call search('^\d\+)', 'b')
@@ -551,17 +584,18 @@ fun! s:ToggleHelpScreen()"{{{1
 	call s:PrintUndoTree(s:HistWin())
 endfun
 
-fun! s:ToggleDetail()"{{{1
+fun! s:ToggleDetail() "{{{1
 	let s:undo_tree_dtl=!s:undo_tree_dtl
 	call histwin#UndoBrowse()
 endfun 
 
-fun! s:UndoBranchTag()"{{{1
+fun! s:UndoBranchTag() "{{{1
 
 	try
 		let change     =    s:ReturnBranch()
 	catch /histwin:/
-		call histwin#WarningMsg("Please put the cursor on one list item, when tagging a branch!")
+		call histwin#WarningMsg("Please put the cursor on one list item,
+					\ when tagging a branch!")
 		return
 	endtry	
 	let tags       =  getbufvar(s:orig_buffer, 'undo_tagdict')
@@ -592,16 +626,18 @@ fun! s:UndoBranchTag()"{{{1
 	call setbufvar(s:orig_buffer, 'undo_customtags', cdict)
 endfun
 
-fun! s:UndoBranch()"{{{1
+fun! s:UndoBranch() "{{{1
 	let dict	=	 getbufvar(s:orig_buffer, 'undo_tagdict')
 	if empty(dict)
-		call histwin#WarningMsg("No Undotree available. Can't switch to a different state!")
+		call histwin#WarningMsg("No Undotree available.
+					\ Can't switch to a different state!")
 		return
 	endif
 	try
 		let key     =    s:ReturnBranch()
 	catch /histwin:/
-		call histwin#WarningMsg("Please put the cursor on one list item, when switching to a branch!")
+		call histwin#WarningMsg("Please put the cursor on one list item,
+					\ when switching to a branch!")
 		return
     endtry	
 	let tlist      =  sort(values(dict), "s:SortValues")
@@ -624,13 +660,39 @@ fun! s:UndoBranch()"{{{1
 	let cpos = getpos('.')
 	let cmd=''
 	let cur_changenr=changenr()
-	"let list=sort(values(b:undo_tagdict), 's:SortValues')
-	"let len = len(b:undo_tagdict)
-	" if len==1, then there is no
-	" undo branch available, which means
-	" we can't undo anyway
+	call <sid>MoveToChange(cur_changenr, dict[key]['change'], tmod)
+"	try
+"		if key==0
+"		   " Jump back to initial state
+"			"let cmd=':earlier 9999999'
+"			:sil! :u1 
+"			if !&modifiable
+"				setl modifiable
+"			endif
+"			sil! :norm 1u
+"		else
+"			exe 'sil! :u '.dict[key]['change']
+"		endif
+"		if s:undo_tree_nomod && tmod
+"			setl nomodifiable
+"		else
+"			setl modifiable
+"		endif
+"	catch /E830: Undo number \d\+ not found/
+"		exe ':sil! :u ' . cur_changenr
+"	    call histwin#WarningMsg("Undo Change not found.")
+"		throw "histwin: abort"
+"	endtry
+	" this might have changed, so we return to the old cursor
+	" position. This could still be wrong, 
+	" So this is our best effort approach.
+	call setpos('.', cpos)
+	return cur_changenr
+endfun
+
+fun! s:MoveToChange(cur_change, change, nomodifiable) "{{{1
 	try
-		if key==0
+		if a:change==0
 		   " Jump back to initial state
 			"let cmd=':earlier 9999999'
 			:sil! :u1 
@@ -639,26 +701,21 @@ fun! s:UndoBranch()"{{{1
 			endif
 			sil! :norm 1u
 		else
-			exe 'sil! :u '.dict[key]['change']
+			exe 'sil! :u' a:change
 		endif
-		if s:undo_tree_nomod && tmod
+		if s:undo_tree_nomod && a:nomodifiable
 			setl nomodifiable
 		else
 			setl modifiable
 		endif
 	catch /E830: Undo number \d\+ not found/
-		exe ':sil! :u ' . cur_changenr
+		exe ':sil! :u ' . a:cur_change
 	    call histwin#WarningMsg("Undo Change not found.")
 		throw "histwin: abort"
 	endtry
-	" this might have changed, so we return to the old cursor
-	" position. This could still be wrong, so
-	" So this is our best effort approach.
-	call setpos('.', cpos)
-	return cur_changenr
 endfun
 
-fun! s:MapKeys()"{{{1
+fun! s:MapKeys() "{{{1
 	nnoremap <script> <silent> <buffer> I     :<C-U>silent :call <sid>ToggleHelpScreen()<CR>
 	nnoremap <script> <silent> <buffer> <C-L> :<C-U>silent :call histwin#UndoBrowse()<CR>
 	nnoremap <script> <silent> <buffer> D     :<C-U>silent :call <sid>DiffUndoBranch()<CR>
@@ -676,22 +733,18 @@ fun! s:ClearTags()"{{{1
 	let b:undo_customtags={}
 	call histwin#UndoBrowse()
 endfun
-fun! histwin#UndoBrowse()"{{{1
+fun! histwin#UndoBrowse() "{{{1
 	if &ul != -1
 		call s:Init()
 		let b:undo_win  = s:HistWin()
-		if s:undo_tree_preview_aucmd
-			call s:PreviewAuCmd(1)
-		else
-			call s:PreviewAuCmd(0)
-		endif
+		call histwin#PreviewAuCmd(s:undo_tree_preview_aucmd || s:undo_tree_signs)
 		let b:undo_tagdict=s:ReturnHistList()
 		call s:PrintUndoTree(b:undo_win)
 		call s:MapKeys()
 	else
 		echoerr "Histwin: Undo has been disabled. Check your undolevel setting!"
 	endif
-endfun "}}}
+endfun 
 fun! s:ReturnLastChange(histdict) "{{{1
 	return max(keys(a:histdict))
 endfun
@@ -718,16 +771,37 @@ fun! s:CloseHistWin() "{{{1
 	wincmd c
 endfun
 	
-fun! s:PreviewAuCmd(enable) "{{{1
+fun! histwin#PreviewAuCmd(enable) "{{{1
+	call <sid>Init()
 	if !exists("#histwin#BufUnload")
 		aug histwin
 			au! BufUnload <buffer> :call <sid>CloseHistWin()
 		aug end
 	endif
-	if a:enable && executable('diff') && !exists("#histwin#CursorHold")
+
+	if !executable('diff')
+	   call histwin#WarningMsg('No diff executable found!
+				   \Disabling auto commands for preview window/changed lines!')
+	   return
+	endif
+
+	if !has('signs') && s:undo_tree_signs
+		call histwin#WarningMsg('You vim has no +signs support. 
+					\Not possible to highlight the changes.')
+		return
+	endif
+
+	if a:enable && !exists("#histwin#CursorHold")
 		aug histwin
-			exe "au! CursorHold <buffer=" . winbufnr(b:undo_win) ."> :call <sid>PreviewDiff()"
+			au! CursorHold <buffer>
+			if (s:undo_tree_preview_aucmd)
+				au! CursorHold <buffer> :call <sid>PreviewDiff()
+			endif
+			if s:undo_tree_signs
+				au! CursorHold <buffer> :call <sid>SignChanges()
+			endif
 		aug end
+
 	elseif exists("#histwin#CursorHold") && !a:enable
 		aug histwin
 			au! CursorHold <buffer>
@@ -736,26 +810,23 @@ fun! s:PreviewAuCmd(enable) "{{{1
 	endif
 endfun
 
-func! s:PreviewDiff() "{{{1
-	if !executable('diff')
-	   call histwin#WarningMsg('No diff executable found! Disabling preview Diff')
-	   return
-	else
-	   let s:undo_tree_diffparam = (exists('g:undo_tree_diffparam') ?
-				   \ g:undo_tree_diffparam : 'diff -ua')
-	endif
+
+fun! s:PreviewDiff() "{{{1
+	let s:undo_tree_diffparam = (exists('g:undo_tree_diffparam') ?
+				\ g:undo_tree_diffparam : 'diff -ua')
 	   
 	try
 		let change = s:ReturnBranch()
 	catch /histwin:/
-		call histwin#WarningMsg("Please put the cursor on one list item, when switching to a branch!")
+		call histwin#WarningMsg("Please put the cursor on one list item,
+					\when switching to a branch!")
 		return
 	endtry	
 	let file_list = []
 
 	exe bufwinnr(s:orig_buffer) 'wincmd w'
 
-	" This is out best effort, because the line might actually not exist in a
+	" This is our best effort, because the line might actually not exist in a
 	" previous state and this seems to confuse winsaveview.
 	let oldpos = winsaveview()
 	wincmd p
@@ -813,6 +884,216 @@ func! s:PreviewDiff() "{{{1
 	exe s:HistWin() . 'wincmd p'
 endfun
 
+
+fun! s:SignChanges() "{{{1
+
+	" We are using the undotree() function here, so
+	" this only works with Vim > 7.3.005
+	if !s:undo_tree_epoch && !len(undotree().entries) 
+		" Nothing to do
+		return
+	endif
+
+	let oldpos = winsaveview()
+	let wwidth = winwidth(0)
+
+	let cur_change  = changenr()
+	let last_saved  = undotree()['save_last']
+	let save_change = 0
+	let lastline    = line('$')
+
+	" holds the lines for changed, modifed and added lines
+	let s:signs = {}
+	for i in ['Add', 'Chg', 'Del']
+		let s:signs[i] = []
+	endfor
+
+	let save_change=<sid>GetChangeFromSaveNr(last_saved)
+	if (save_change == 0)
+		call histwin#WarningMsg("Can't check hilighted lines, if the buffer 
+					\hasn't been saved yet!")
+		return
+	endif
+
+	let o_lz = &lz
+	setl lz
+
+	call <sid>MoveToChange(cur_change, save_change, 1)
+	let buffer=getline(1,'$')
+
+	try
+		exe ':sil! u ' . cur_change
+		setl modifiable
+	catch /Vim(undo):Undo number \d\+ not found/
+		call s:WarningMsg("Undo Change not found!")
+	endtry
+
+	" Save buffer options, that will be reset by diff mode
+	let buf_opts = {}
+	let buf_opts['scrollbind'] = &scrollbind
+	let buf_opts['cursorbind'] = &cursorbind
+	let buf_opts['scrollopt']  = &scrollopt
+	let buf_opts['wrap']  = &wrap
+	let buf_opts['fdm']  = &fdm
+	let buf_opts['fdc']  = &fdc
+	
+
+	exe 'sil botright vsp '.tempname()
+
+	" Now we are in the temp. buffer
+	call append(0, buffer)
+	sil! $d _
+	
+	diffthis
+	noa wincmd p
+	diffthis
+
+    call <sid>CheckLines(1)
+
+	" Back in temp buffer
+	noa wincmd p
+    call <sid>CheckLines(2, lastline)
+	diffoff
+	bw!
+	" Back in original buffer
+	noa wincmd p
+
+	diffoff
+
+	if !empty(s:signs['Add']) || !empty(s:signs['Chg'])
+				\ || !empty(s:signs['Del'])
+		" Place signs
+		call <sid>InitSigns()
+		call <sid>PlaceSigns()
+	else
+		" Deleted old signs anyways
+		call <sid>UnPlaceSigns()
+	endif
+
+	" Reset options, that have been set by 'diff' mode
+	for [opt, item] in items(buf_opts)
+		let &l:opt = item
+	endfor
+	unlet item
+
+	exe "vert res" wwidth
+	call winrestview(oldpos)
+	let &l:lz = o_lz
+endfun
+
+fun! s:InitSigns() "{{{1
+	if !exists("s:signs_defined")
+		sign define Histwin_Add text=+ texthl=DiffAdd linehl=DiffAdd
+		sign define Histwin_Del text=- texthl=DiffDelete linehl=DiffDelete
+		sign define Histwin_Chg text=* texthl=DiffChange linehl=DiffChange
+		let s:signs_defined=1
+	endif
+endfunc
+
+
+fun! s:UnPlaceSigns() "{{{1
+	" Unplaces all Signs defined by the histwin plugin,
+	" returns a list of all signs, that must not be touched
+	redir => a | exe "sil! sign place buffer=" . bufnr('') |redir end
+	let signlist = split(a, "\n")[2:]
+	if empty(signlist)
+		" No Sings defined, return...
+		return []
+	endif
+
+	for sign in signlist
+		if (sign =~# 'name=Histwin')
+			exe "sign unplace" substitute(sign, '^.*id=\(\d\+\).*', '\1', '')
+			call remove(signlist, 0)
+		endif
+	endfor
+
+	call map(signlist, 'substitute(v:val, ''^.*id=\(\d\+\).*'', ''\1'', '''')')
+	return sort(signlist)
+
+endfunc
+
+fun! s:PlaceSigns() "{{{1
+	let existingSigns = <sid>UnPlaceSigns()
+
+	let i=1
+	for [ key, linelist] in items(s:signs)
+		for line in linelist
+			" Check for next free id, that is not yet used for placing a sign
+			if !empty(existingSigns)
+				while i >= existingSigns[0]
+					if (i == existingSigns[0])
+						let i+=1
+					endif
+					call remove(existingSigns,0)
+				endw
+			endif
+			exe "sign place " . i . " line=" . line . " name=Histwin_" . key . " buffer=" . bufnr('')
+			let i+=1
+		endfor
+	endfor
+endfunc
+
+fun! s:CheckLines(orig, ...) "{{{1
+	" a:orig == 1: check Lines in original buffer,
+	" a:orig == 2: check lines in temp. buffer (we need a:1 here)
+	" difference matters for DiffDelete, since syn hi for deleted Text is 
+	" not available in original buffer, we need to check temp buffer
+	" for added lines and set those to DiffDeleted hilighting.
+	"Check lines in original buffer
+	let line=1
+	if  (a:orig == 1)
+		while line <= line('$')
+			let id=diff_hlID(line,1)
+			if (id == 0)
+				let line+=1
+				continue
+			endif
+
+			if (id == hlID("DiffAdd"))
+				call add(s:signs['Add'], line)
+			elseif (id == hlID("DiffChange") || id == hlID("DiffText"))
+				call add(s:signs['Chg'], line)
+			endif
+			let line+=1
+		endw
+	else
+	" Check temp. window for deleted lines
+	    let stop=1
+		while line <= line('$')
+			let id=diff_hlID(line,1)
+			if (id == 0)
+				let line+=1
+				if !stop
+					let stop=1
+				endif
+				continue
+			endif
+
+			if (id == hlID("DiffAdd")) && stop
+				" If the deleted line is past the last line of the original
+				" file, put the sign on the last line, else
+				" if the deleted line is the first line, put the sign on 
+				" the first line, else put it on the line above where the
+				" deletion took place.
+				call add(s:signs['Del'], (line > a:1 ? a:1 : line==1 ? 1 : line - 1))
+				let stop=0
+			endif
+			let line+=1
+		endw
+	endif
+endfun
+
+fun s:GetChangeFromSaveNr(saved) "{{{1
+	for item in undotree().entries
+		if has_key(item, "save") && item.save == a:saved
+			let save_change = item.seq
+			break
+		endif
+	endfor
+	return save_change
+endfun
+
 " Modeline and Finish stuff: {{{1
 let &cpo=s:cpo
 unlet s:cpo
@@ -867,31 +1148,31 @@ By default you can open the Undo-Tree Window by issuing :UB (Mnemonic:
 UndoBrowse). If you do this, you will see a window that looks
 like this:
 
-+------------------------------------------------------+`
-|Undo-Tree: FILENAME           |#!/bin/bash            |`
-|======================        |                       |`
-|                              |                       |`
-|" actv. keys in this window   |if [ $# -ne 2 ];  the  |`
-|" I toggles help screen       |    echo "Name: $0: arg|`
-|" <Enter> goto undo branch    |    echo               |`
-|" <C-L>   Update view         |    exit 1             |`
-|" T       Tag sel. branch     |fi                     |`
-|" P       Toggle view         |                       |`
-|" D       Diff sel. branch    |if true; then          |`
-|" U       Preview unif. Diff  |                       |`
-|" R       Replay sel. branch  |    dir="${1%/*}"      |`
-|" C       Clear all tags      |    file="${1##*/}"    |`
-|" Q       Quit window         |    target="${2}/${di  |`
-|"                             |    if [ ! -e "${targ  |`
-|" Undo-Tree, v0.20            |        mkdir -p "$ta  |`
-|                              |        mv "$1" "$tar  |`
-|Nr   Time   Fl  Tag           |                       |`
-|1)   Sep 01    /Start Editing/|                       |`
-|2)   Sep 01 !  /First draft/  |                       |`
-|3) 23:01:22                   |                       |`
-|4) 23:02:57 *  /Release 1/    |                       |`
-|5) 23:05:04                   |                       |`
-+------------------------------------------------------+`
++------------------------------------------------------+ `
+|Undo-Tree: FILENAME           |#!/bin/bash            | `
+|======================        |                       | `
+|                              |                       | `
+|" actv. keys in this window   |if [ $# -ne 2 ];  the  | `
+|" I toggles help screen       |    echo "Name: $0: arg| `
+|" <Enter> goto undo branch    |    echo               | `
+|" <C-L>   Update view         |    exit 1             | `
+|" T       Tag sel. branch     |fi                     | `
+|" P       Toggle view         |                       | `
+|" D       Diff sel. branch    |if true; then          | `
+|" U       Preview unif. Diff  |                       | `
+|" R       Replay sel. branch  |    dir="${1%/*}"      | `
+|" C       Clear all tags      |    file="${1##*/}"    | `
+|" Q       Quit window         |    target="${2}/${di  | `
+|"                             |    if [ ! -e "${targ  | `
+|" Undo-Tree, v0.20            |        mkdir -p "$ta  | `
+|                              |        mv "$1" "$tar  | `
+|Nr   Time   Fl  Tag           |                       | `
+|1)   Sep 01    /Start Editing/|                       | `
+|2)   Sep 01 !  /First draft/  |                       | `
+|3) 23:01:22                   |                       | `
+|4) 23:02:57 *  /Release 1/    |                       | `
+|5) 23:05:04                   |                       | `
++------------------------------------------------------+ `
 
 This shows an extract of a sample file on the right side. The window on the
 left side, contains an overview of all available states that are known for

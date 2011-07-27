@@ -162,8 +162,6 @@ fun! s:ReturnHistList() "{{{1
 		let first = ut[0]
 		let first.tag='Start Editing'
 
-		" We need the complete list, if we want to use the signs
-		" or display the detailed list
 		if s:undo_tree_dtl
 			call filter(ut, 'v:val.change =~ re')
 		else

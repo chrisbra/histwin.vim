@@ -45,6 +45,14 @@ if exists(":UB") != 2
 else
 	call WarningMsg("UB is already defined. May be by another Plugin?")
 endif " }}}
+
+if exists(":ID") != 2
+	com -nargs=0 ID :call histwin#SignChanges(1)
+	com -nargs=0 IndicateDifferences :call histwin#SignChanges(1)
+else
+	call WarningMsg("DM is already defined. May be by another Plugin?")
+endif " }}}
+
 " ChangeLog: {{{2
 " see :h histwin-history
 " Restore: {{{2

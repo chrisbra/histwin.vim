@@ -40,12 +40,12 @@ any of these states. It opens a new window, which contains all available
 states and using this plugin allows you to tag a previous change or go back to
 a particular state.
 
-                                                       *histwin-browse* *:UB*
+						*histwin-browse* *:UB* *:Histwin*
 2.1 Opening the Undo-Tree Window
 
 By default you can open the Undo-Tree Window by issuing :UB (Mnemonic:
-UndoBrowse). If you do this, you will see a window that looks
-like this:
+UndoBrowse). Alternatively, you can use the command :Histwin
+If you do this, you will see a window that looks like this:
 
 +------------------------------------------------------+ `
 |Undo-Tree: FILENAME           |#!/bin/bash            | `
@@ -319,7 +319,7 @@ Reopen the histwin window.
 
 ------------------------------------------------------------------------------
 
-                                                               *histwin-highl*
+							    *histwin-highl* *:ID*
 4.5 Highlight changed lines
 
 The histwin plugin also allows to automatically highlight those lines, that
@@ -330,7 +330,7 @@ the first column:
   '-' This is the sign for a deleted line
   '*' This is the sign for a modified line
 
-This feature needs a Vim with |+signs|support, so if this does not work for
+This feature needs a Vim with |+signs| support, so if this does not work for
 you, check the |:version| output.
 
 To enable this feature, set the g:undo_tree_highlight_changes variable, e.g.
@@ -341,6 +341,14 @@ in your |.vimrc| >
 When this variable is set, Vim sets up an |CursorHold| autocommand, thatt will
 check your buffer for changes against the last saved version. To disable this
 feature, simply set this variable to 0.
+
+If you don't want to have these signs put on permanently, you can also invoke
+the command (:ID, Mnemonic: IndicateDifferences) manually: >
+
+    :ID
+<
+which will place the signs in your buffer only once and is not as disturbing
+as an auto command is.
 
 ==============================================================================
                                                            *histwin-feedback*
@@ -361,6 +369,7 @@ third line of this document.
 6. histwin History
 
 0.22    - Display signs for changed lines
+        - |:ID|
         - small code improvements
 0.21    - more standard like help files
         - make sure, the autoload script is only called when needed

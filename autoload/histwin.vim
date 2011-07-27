@@ -736,7 +736,7 @@ fun! histwin#PreviewAuCmd(enable) "{{{1
 				au! CursorHold <buffer> :call <sid>PreviewDiff()
 			endif
 			if s:undo_tree_signs
-				au! CursorHold <buffer> :call <sid>SignChanges()
+				au! CursorHold <buffer> :call histwin#SignChanges(0)
 			endif
 		aug end
 
@@ -823,11 +823,17 @@ fun! s:PreviewDiff() "{{{1
 endfun
 
 
-fun! s:SignChanges() "{{{1
+fun! histwin#SignChanges(com) "{{{1
+	if a:com
+		call <sid>Init()
+	endif
 
 	" We are using the undotree() function here, so
 	" this only works with Vim > 7.3.005
 	if !s:undo_tree_epoch && !len(undotree().entries) 
+		if a:com
+			call histwin#WarningMsg("Displaying Differences marks not possible")
+		endif
 		" Nothing to do
 		return
 	endif
@@ -921,9 +927,9 @@ endfun
 
 fun! s:InitSigns() "{{{1
 	if !exists("s:signs_defined")
-		sign define Histwin_Add text=+ texthl=DiffAdd "linehl=DiffAdd
-		sign define Histwin_Del text=- texthl=DiffDelete "linehl=DiffDelete
-		sign define Histwin_Chg text=* texthl=DiffChange "linehl=DiffChange
+		sign define Histwin_Add text=+ texthl=DiffAdd
+		sign define Histwin_Del text=- texthl=DiffDelete
+		sign define Histwin_Chg text=* texthl=DiffChange
 		let s:signs_defined=1
 	endif
 endfunc

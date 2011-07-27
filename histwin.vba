@@ -2,12 +2,12 @@
 UseVimball
 finish
 plugin/histwinPlugin.vim	[[[1
-53
+61
 " histwin.vim - Vim global plugin for browsing the undo tree {{{1
 " -------------------------------------------------------------
-" Last Change: Sat, 18 Dec 2010 08:54:06 +0100
+" Last Change: Wed, 27 Jul 2011 23:59:04 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.21
+" Version:     0.22
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -15,14 +15,14 @@ plugin/histwinPlugin.vim	[[[1
 "              No warranty, express or implied.
 "    *** ***   Use At-Your-Own-Risk!   *** ***
 "
-" GetLatestVimScripts: 2932 14 :AutoInstall: histwin.vim
+" GetLatestVimScripts: 2932 15 :AutoInstall: histwin.vim
 
 " Init: {{{2
 if exists("g:loaded_undo_browse") || &cp || &ul == -1
   finish
 endif
 
-let g:loaded_undo_browse = 0.21
+let g:loaded_undo_browse = 0.22
 let s:cpo                = &cpo
 set cpo&vim
 
@@ -50,6 +50,14 @@ if exists(":UB") != 2
 else
 	call WarningMsg("UB is already defined. May be by another Plugin?")
 endif " }}}
+
+if exists(":ID") != 2
+	com -nargs=0 ID :call histwin#SignChanges(1)
+	com -nargs=0 IndicateDifferences :call histwin#SignChanges(1)
+else
+	call WarningMsg("DM is already defined. May be by another Plugin?")
+endif " }}}
+
 " ChangeLog: {{{2
 " see :h histwin-history
 " Restore: {{{2
@@ -57,12 +65,12 @@ let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdm=syntax
 autoload/histwin.vim	[[[1
-1040
+1044
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Sat, 18 Dec 2010 08:54:06 +0100
+" Last Change: Wed, 27 Jul 2011 23:59:04 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.21
+" Version:     0.22
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -222,8 +230,6 @@ fun! s:ReturnHistList() "{{{1
 		let first = ut[0]
 		let first.tag='Start Editing'
 
-		" We need the complete list, if we want to use the signs
-		" or display the detailed list
 		if s:undo_tree_dtl
 			call filter(ut, 'v:val.change =~ re')
 		else
@@ -798,7 +804,7 @@ fun! histwin#PreviewAuCmd(enable) "{{{1
 				au! CursorHold <buffer> :call <sid>PreviewDiff()
 			endif
 			if s:undo_tree_signs
-				au! CursorHold <buffer> :call <sid>SignChanges()
+				au! CursorHold <buffer> :call histwin#SignChanges(0)
 			endif
 		aug end
 
@@ -885,11 +891,17 @@ fun! s:PreviewDiff() "{{{1
 endfun
 
 
-fun! s:SignChanges() "{{{1
+fun! histwin#SignChanges(com) "{{{1
+	if a:com
+		call <sid>Init()
+	endif
 
 	" We are using the undotree() function here, so
 	" this only works with Vim > 7.3.005
 	if !s:undo_tree_epoch && !len(undotree().entries) 
+		if a:com
+			call histwin#WarningMsg("Displaying Differences marks not possible")
+		endif
 		" Nothing to do
 		return
 	endif
@@ -983,9 +995,9 @@ endfun
 
 fun! s:InitSigns() "{{{1
 	if !exists("s:signs_defined")
-		sign define Histwin_Add text=+ texthl=DiffAdd linehl=DiffAdd
-		sign define Histwin_Del text=- texthl=DiffDelete linehl=DiffDelete
-		sign define Histwin_Chg text=* texthl=DiffChange linehl=DiffChange
+		sign define Histwin_Add text=+ texthl=DiffAdd
+		sign define Histwin_Del text=- texthl=DiffDelete
+		sign define Histwin_Chg text=* texthl=DiffChange
 		let s:signs_defined=1
 	endif
 endfunc
@@ -1099,7 +1111,7 @@ let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdl=0
 doc/histwin.txt	[[[1
-428
+465
 *histwin.txt*	For Vim version 7.3	Last change: 2010 Nov. 18
 
 Author:  Christian Brabandt <cb@256bit.org>
@@ -1121,6 +1133,7 @@ Copyright: (c) 2009, 2010 by Christian Brabandt           *histwin-copyright*
    Color Configuration......................................|histwin-color|
    Undolevels settings......................................|histwin-ut|
    Configuring the preview window...........................|histwin-prev|
+   Highlight changed lines..................................|histwin-highl|
 5. Feedback.................................................|histwin-feedback|
 6. History..................................................|histwin-history|
 
@@ -1141,12 +1154,12 @@ any of these states. It opens a new window, which contains all available
 states and using this plugin allows you to tag a previous change or go back to
 a particular state.
 
-                                                       *histwin-browse* *:UB*
+						*histwin-browse* *:UB* *:Histwin*
 2.1 Opening the Undo-Tree Window
 
 By default you can open the Undo-Tree Window by issuing :UB (Mnemonic:
-UndoBrowse). If you do this, you will see a window that looks
-like this:
+UndoBrowse). Alternatively, you can use the command :Histwin
+If you do this, you will see a window that looks like this:
 
 +------------------------------------------------------+ `
 |Undo-Tree: FILENAME           |#!/bin/bash            | `
@@ -1344,38 +1357,6 @@ g:undo_tree_nomod variable in your |.vimrc| like this: >
     :let g:undo_tree_nomod = 0
 
 ------------------------------------------------------------------------------
-                                                                *histwin-prev*
-4.1.6 Configuring diff options, for display in the preview-window
-
-If you press 'U' in the histwin, the |preview-window| will open and display
-a diff (by default in unified diff format) of the selected undo branch and
-your buffer. This requires however, that a diff executable is found in your
-path. The default paramters for the diff executable are: >
-
-    diff -au 
-
-This means, diff will treat all files as text (-a) and create a unified diff
-(with 3 lines of unified context). You can however use your own format. If for
-example you prefer context diffs, set the g:undo_tree_diffparam variable like
-this in your |.vimrc|: >
-
-    let g:undo_tree_diffparam = 'diff -c'
-
-Note, that you need to specify the diff utility explicitly. This enables you
-to even use a different tool then diff (but even then to work correctly,
-you'll need a diff binary in your path).
-
-Additionally, you can configure the histwin plugin to automatically open the
-|preview-window| after 'updatetime' milliseconds have past without a key
-press in Normal mode. To enable this, set the  g:undo_tree_preview_aucmd
-variable in your |.vimrc| to 1 like this: >
-
-    let g:undo_tree_preview_aucmd = 1
-
-To disable this, simply set g:undo_tree_preview_aucmd to zero and Close and
-Reopen the histwin window.
-
-------------------------------------------------------------------------------
 
                                                                *histwin-color*
 4.2 Color configuration
@@ -1418,6 +1399,71 @@ will already be deleted. So the obvious fix is to set the 'undolevels' setting
 to a much higher value, like 10,000 or even higher. This will however increase
 the memory usage quite a lot.
 
+------------------------------------------------------------------------------
+                                                                *histwin-prev*
+4.4 Configuring diff options, for display in the preview-window
+
+If you press 'U' in the histwin, the |preview-window| will open and display
+a diff (by default in unified diff format) of the selected undo branch and
+your buffer. This requires however, that a diff executable is found in your
+path. The default paramters for the diff executable are: >
+
+    diff -au 
+
+This means, diff will treat all files as text (-a) and create a unified diff
+(with 3 lines of unified context). You can however use your own format. If for
+example you prefer context diffs, set the g:undo_tree_diffparam variable like
+this in your |.vimrc|: >
+
+    let g:undo_tree_diffparam = 'diff -c'
+
+Note, that you need to specify the diff utility explicitly. This enables you
+to even use a different tool then diff (but even then to work correctly,
+you'll need a diff binary in your path).
+
+Additionally, you can configure the histwin plugin to automatically open the
+|preview-window| after 'updatetime' milliseconds have past without a key
+press in Normal mode. To enable this, set the  g:undo_tree_preview_aucmd
+variable in your |.vimrc| to 1 like this: >
+
+    let g:undo_tree_preview_aucmd = 1
+
+To disable this, simply set g:undo_tree_preview_aucmd to zero and Close and
+Reopen the histwin window.
+
+------------------------------------------------------------------------------
+
+							    *histwin-highl* *:ID*
+4.5 Highlight changed lines
+
+The histwin plugin also allows to automatically highlight those lines, that
+have been changed since the last save. It does so by placing small signs in
+the first column:
+
+  '+' This is the sign for an added line
+  '-' This is the sign for a deleted line
+  '*' This is the sign for a modified line
+
+This feature needs a Vim with |+signs| support, so if this does not work for
+you, check the |:version| output.
+
+To enable this feature, set the g:undo_tree_highlight_changes variable, e.g.
+in your |.vimrc| >
+
+  :let g:undo_tree_highlight_changes=1
+<
+When this variable is set, Vim sets up an |CursorHold| autocommand, thatt will
+check your buffer for changes against the last saved version. To disable this
+feature, simply set this variable to 0.
+
+If you don't want to have these signs put on permanently, you can also invoke
+the command (:ID, Mnemonic: IndicateDifferences) manually: >
+
+    :ID
+<
+which will place the signs in your buffer only once and is not as disturbing
+as an auto command is.
+
 ==============================================================================
                                                            *histwin-feedback*
 5. Feedback
@@ -1436,6 +1482,9 @@ third line of this document.
                                                             *histwin-history*
 6. histwin History
 
+0.22    - Display signs for changed lines
+        - |:ID|
+        - small code improvements
 0.21    - more standard like help files
         - make sure, the autoload script is only called when needed
 	  (and not on startup)

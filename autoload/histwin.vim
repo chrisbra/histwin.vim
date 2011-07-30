@@ -405,6 +405,7 @@ fun! s:PrintHelp(...) "{{{1
 		call add(mess, "\" R\t  Replay sel. branch")
 		call add(mess, "\" C\t  Clear all tags")
 		call add(mess, "\" Q\t  Quit window")
+		call add(mess, "\" X\t  Purge Undo history")
 		call add(mess, '"')
 		call add(mess, "\" Undo-Tree, v" . printf("%.02f",g:loaded_undo_browse))
 	endif
@@ -665,6 +666,9 @@ fun! s:MapKeys() "{{{1
 	nmap	 <script> <silent> <buffer> T     :call <sid>UndoBranchTag()<CR>:call histwin#UndoBrowse()<CR>
 	nmap     <script> <silent> <buffer>	P     :<C-U>silent :call <sid>ToggleDetail()<CR><C-L>
 	nmap	 <script> <silent> <buffer> C     :call <sid>ClearTags()<CR><C-L>
+	nmap	 <script> <silent> <buffer> X     :call <sid>PurgeUndoHistory()<CR>
+	nmap	 <script> <silent> <buffer> <BS> X
+	nmap	 <script> <silent> <buffer> <Del> X
 endfun "}}}
 fun! s:ClearTags()"{{{1
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
@@ -1036,6 +1040,31 @@ fun s:GetChangeFromSaveNr(saved) "{{{1
 		endif
 	endfor
 	return save_change
+endfun
+
+fun s:PurgeUndoHistory() "{{{1
+	let _whist=winsaveview()
+	exe 'noa' . bufwinnr(s:orig_buffer) . 'wincmd w'
+	let _wsav=winsaveview()
+	let save={}
+	" Not sure, why prefixing the variables with &l: &g: not works.
+	let save.ul = &g:ul
+	let save.ro = &l:ro
+	let save.ma = &l:ma
+	let save.mod = &l:mod
+	set undolevels=-1
+	exe "norm! G$a \<BS>\<Esc>"
+	call delete(undofile(@%))
+
+	for [key, value] in items(save)
+		call setbufvar('', '&' . key, value)
+	endfor
+	call winrestview(_wsav)
+	redr!
+	call histwin#WarningMsg(strftime('%T') . ": Undo history successully removed!")
+	call histwin#UndoBrowse()
+	call winrestview(_whist)
+	unlet! _wsav _whist save
 endfun
 
 " Modeline and Finish stuff: {{{1

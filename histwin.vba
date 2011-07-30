@@ -5,9 +5,9 @@ plugin/histwinPlugin.vim	[[[1
 61
 " histwin.vim - Vim global plugin for browsing the undo tree {{{1
 " -------------------------------------------------------------
-" Last Change: Wed, 27 Jul 2011 23:59:04 +0200
+" Last Change: Sat, 30 Jul 2011 15:34:59 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.22
+" Version:     0.23
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -15,14 +15,14 @@ plugin/histwinPlugin.vim	[[[1
 "              No warranty, express or implied.
 "    *** ***   Use At-Your-Own-Risk!   *** ***
 "
-" GetLatestVimScripts: 2932 15 :AutoInstall: histwin.vim
+" GetLatestVimScripts: 2932 16 :AutoInstall: histwin.vim
 
 " Init: {{{2
 if exists("g:loaded_undo_browse") || &cp || &ul == -1
   finish
 endif
 
-let g:loaded_undo_browse = 0.22
+let g:loaded_undo_browse = 0.23
 let s:cpo                = &cpo
 set cpo&vim
 
@@ -65,12 +65,12 @@ let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdm=syntax
 autoload/histwin.vim	[[[1
-1044
+1071
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Wed, 27 Jul 2011 23:59:04 +0200
+" Last Change: Sat, 30 Jul 2011 15:34:59 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.22
+" Version:     0.23
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -473,6 +473,7 @@ fun! s:PrintHelp(...) "{{{1
 		call add(mess, "\" R\t  Replay sel. branch")
 		call add(mess, "\" C\t  Clear all tags")
 		call add(mess, "\" Q\t  Quit window")
+		call add(mess, "\" X\t  Purge Undo history")
 		call add(mess, '"')
 		call add(mess, "\" Undo-Tree, v" . printf("%.02f",g:loaded_undo_browse))
 	endif
@@ -733,6 +734,7 @@ fun! s:MapKeys() "{{{1
 	nmap	 <script> <silent> <buffer> T     :call <sid>UndoBranchTag()<CR>:call histwin#UndoBrowse()<CR>
 	nmap     <script> <silent> <buffer>	P     :<C-U>silent :call <sid>ToggleDetail()<CR><C-L>
 	nmap	 <script> <silent> <buffer> C     :call <sid>ClearTags()<CR><C-L>
+	nmap	 <script> <silent> <buffer> X     :call <sid>PurgeUndoHistory()<CR>
 endfun "}}}
 fun! s:ClearTags()"{{{1
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
@@ -1106,12 +1108,37 @@ fun s:GetChangeFromSaveNr(saved) "{{{1
 	return save_change
 endfun
 
+fun s:PurgeUndoHistory() "{{{1
+	let _whist=winsaveview()
+	exe 'noa' . bufwinnr(s:orig_buffer) . 'wincmd w'
+	let _wsav=winsaveview()
+	let save={}
+	" Not sure, why prefixing the variables with &l: &g: not works.
+	let save.ul = &g:ul
+	let save.ro = &l:ro
+	let save.ma = &l:ma
+	let save.mod = &l:mod
+	set undolevels=-1
+	exe "norm! G$a \<BS>\<Esc>"
+	call delete(undofile(@%))
+
+	for [key, value] in items(save)
+		call setbufvar('', '&' . key, value)
+	endfor
+	call winrestview(_wsav)
+	redr!
+	call histwin#WarningMsg(strftime('%T') . ": Undo history successully removed!")
+	call histwin#UndoBrowse()
+	call winrestview(_whist)
+	unlet! _wsav _whist save
+endfun
+
 " Modeline and Finish stuff: {{{1
 let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdl=0
 doc/histwin.txt	[[[1
-465
+467
 *histwin.txt*	For Vim version 7.3	Last change: 2010 Nov. 18
 
 Author:  Christian Brabandt <cb@256bit.org>
@@ -1278,6 +1305,7 @@ window:
          (see |histwin-config| for adjusting the speed)
 'C'      Clear all tags.
 'Q'      Quit window
+'X'      Purge Undo history
 
 ==============================================================================
                                                 *histwin-var* *histwin-config*
@@ -1482,6 +1510,7 @@ third line of this document.
                                                             *histwin-history*
 6. histwin History
 
+0.23    - Purge Undo history with 'X'
 0.22    - Display signs for changed lines
         - |:ID|
         - small code improvements

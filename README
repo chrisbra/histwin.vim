@@ -164,6 +164,7 @@ window:
          (see |histwin-config| for adjusting the speed)
 'C'      Clear all tags.
 'Q'      Quit window
+'X'      Purge Undo history
 
 ==============================================================================
                                                 *histwin-var* *histwin-config*
@@ -368,6 +369,7 @@ third line of this document.
                                                             *histwin-history*
 6. histwin History
 
+0.23    - Purge Undo history with 'X'
 0.22    - Display signs for changed lines
         - |:ID|
         - small code improvements

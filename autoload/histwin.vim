@@ -667,8 +667,6 @@ fun! s:MapKeys() "{{{1
 	nmap     <script> <silent> <buffer>	P     :<C-U>silent :call <sid>ToggleDetail()<CR><C-L>
 	nmap	 <script> <silent> <buffer> C     :call <sid>ClearTags()<CR><C-L>
 	nmap	 <script> <silent> <buffer> X     :call <sid>PurgeUndoHistory()<CR>
-	nmap	 <script> <silent> <buffer> <BS> X
-	nmap	 <script> <silent> <buffer> <Del> X
 endfun "}}}
 fun! s:ClearTags()"{{{1
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'

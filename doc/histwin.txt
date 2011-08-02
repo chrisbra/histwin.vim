@@ -321,7 +321,7 @@ Reopen the histwin window.
 ------------------------------------------------------------------------------
 
 						    *histwin-highl*
-						    *:IndicateDifferences*
+						    *:HistID*
 4.5 Highlight changed lines
 
 The histwin plugin also allows to automatically highlight those lines, that
@@ -345,9 +345,9 @@ check your buffer for changes against the last saved version. To disable this
 feature, simply set this variable to 0.
 
 If you don't want to have these signs put on permanently, you can also invoke
-the command (:IndicateDifferences) manually: >
+the command (:HistID, Mnemonic, IndicateDifferences) manually: >
 
-    :IndicateDifferences
+    :HistID
 <
 which will place the signs in your buffer only once and is not as disturbing
 as an auto command is.
@@ -371,6 +371,7 @@ third line of this document.
 6. histwin History
 
 0.24    - :ID is already defined by visincr plugin
+          instead use the command :HistID
 0.23    - Purge Undo history with 'X'
 0.22    - Display signs for changed lines
         - |:ID|

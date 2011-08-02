@@ -46,10 +46,10 @@ else
 	call WarningMsg("UB is already defined. May be by another Plugin?")
 endif " }}}
 
-if exists(":IndicateDifferences") != 2
-	com -nargs=0 IndicateDifferences :call histwin#SignChanges(1)
+if exists(":HistID") != 2
+	com -nargs=0 HistID :call histwin#SignChanges(1)
 else
-	call WarningMsg("ID is already defined. May be by another Plugin?")
+	call WarningMsg("HistID is already defined. May be by another Plugin?")
 endif " }}}
 
 " ChangeLog: {{{2

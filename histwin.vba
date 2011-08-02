@@ -2,12 +2,12 @@
 UseVimball
 finish
 plugin/histwinPlugin.vim	[[[1
-61
+60
 " histwin.vim - Vim global plugin for browsing the undo tree {{{1
 " -------------------------------------------------------------
-" Last Change: Sat, 30 Jul 2011 15:34:59 +0200
+" Last Change: Tue, 02 Aug 2011 07:48:56 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.23
+" Version:     0.24
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -15,14 +15,14 @@ plugin/histwinPlugin.vim	[[[1
 "              No warranty, express or implied.
 "    *** ***   Use At-Your-Own-Risk!   *** ***
 "
-" GetLatestVimScripts: 2932 16 :AutoInstall: histwin.vim
+" GetLatestVimScripts: 2932 17 :AutoInstall: histwin.vim
 
 " Init: {{{2
 if exists("g:loaded_undo_browse") || &cp || &ul == -1
   finish
 endif
 
-let g:loaded_undo_browse = 0.23
+let g:loaded_undo_browse = 0.24
 let s:cpo                = &cpo
 set cpo&vim
 
@@ -51,11 +51,10 @@ else
 	call WarningMsg("UB is already defined. May be by another Plugin?")
 endif " }}}
 
-if exists(":ID") != 2
-	com -nargs=0 ID :call histwin#SignChanges(1)
-	com -nargs=0 IndicateDifferences :call histwin#SignChanges(1)
+if exists(":HistID") != 2
+	com -nargs=0 HistID :call histwin#SignChanges(1)
 else
-	call WarningMsg("DM is already defined. May be by another Plugin?")
+	call WarningMsg("HistID is already defined. May be by another Plugin?")
 endif " }}}
 
 " ChangeLog: {{{2
@@ -68,9 +67,9 @@ autoload/histwin.vim	[[[1
 1071
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Sat, 30 Jul 2011 15:34:59 +0200
+" Last Change: Tue, 02 Aug 2011 07:48:56 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.23
+" Version:     0.24
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -1138,7 +1137,7 @@ let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdl=0
 doc/histwin.txt	[[[1
-467
+470
 *histwin.txt*	For Vim version 7.3	Last change: 2010 Nov. 18
 
 Author:  Christian Brabandt <cb@256bit.org>
@@ -1461,7 +1460,8 @@ Reopen the histwin window.
 
 ------------------------------------------------------------------------------
 
-							    *histwin-highl* *:ID*
+						    *histwin-highl*
+						    *:HistID*
 4.5 Highlight changed lines
 
 The histwin plugin also allows to automatically highlight those lines, that
@@ -1485,9 +1485,9 @@ check your buffer for changes against the last saved version. To disable this
 feature, simply set this variable to 0.
 
 If you don't want to have these signs put on permanently, you can also invoke
-the command (:ID, Mnemonic: IndicateDifferences) manually: >
+the command (:HistID, Mnemonic, IndicateDifferences) manually: >
 
-    :ID
+    :HistID
 <
 which will place the signs in your buffer only once and is not as disturbing
 as an auto command is.
@@ -1510,6 +1510,8 @@ third line of this document.
                                                             *histwin-history*
 6. histwin History
 
+0.24    - :ID is already defined by visincr plugin
+          instead use the command :HistID
 0.23    - Purge Undo history with 'X'
 0.22    - Display signs for changed lines
         - |:ID|

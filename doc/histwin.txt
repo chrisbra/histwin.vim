@@ -371,9 +371,9 @@ third line of this document.
 6. histwin History
 
 0.25    - fixes issue 2 from github
-	https://github.com/chrisbra/histwin/issues/2
-	(When 'splitright' is set, Diffing a previous undo branch
-	separates the window layout)
+	  https://github.com/chrisbra/histwin/issues/2
+	  (When 'splitright' is set, Diffing a previous undo branch
+	  separates the window layout, reported by bootleq, thanks!)
 0.24    - :ID is already defined by visincr plugin
           instead use the command :HistID
 0.23    - Purge Undo history with 'X'

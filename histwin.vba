@@ -5,9 +5,9 @@ plugin/histwinPlugin.vim	[[[1
 60
 " histwin.vim - Vim global plugin for browsing the undo tree {{{1
 " -------------------------------------------------------------
-" Last Change: Tue, 02 Aug 2011 07:48:56 +0200
+" Last Change: Mon, 15 Aug 2011 10:37:51 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.24
+" Version:     0.25
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -15,14 +15,14 @@ plugin/histwinPlugin.vim	[[[1
 "              No warranty, express or implied.
 "    *** ***   Use At-Your-Own-Risk!   *** ***
 "
-" GetLatestVimScripts: 2932 17 :AutoInstall: histwin.vim
+" GetLatestVimScripts: 2932 18 :AutoInstall: histwin.vim
 
 " Init: {{{2
 if exists("g:loaded_undo_browse") || &cp || &ul == -1
   finish
 endif
 
-let g:loaded_undo_browse = 0.24
+let g:loaded_undo_browse = 0.25
 let s:cpo                = &cpo
 set cpo&vim
 
@@ -64,12 +64,12 @@ let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdm=syntax
 autoload/histwin.vim	[[[1
-1071
+1075
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Tue, 02 Aug 2011 07:48:56 +0200
+" Last Change: Mon, 15 Aug 2011 10:37:51 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.24
+" Version:     0.25
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 
@@ -507,6 +507,10 @@ fun! s:DiffUndoBranch()"{{{1
     exe "setl ft=".cur_ft
 	silent w!
 	diffthis
+	" Fix issue 2 for histwin: http://github.com/chrisbra/histwin/issues/2
+	if &splitright
+		wincmd x
+	endif
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 	diffthis
 endfun
@@ -1137,7 +1141,7 @@ let &cpo=s:cpo
 unlet s:cpo
 " vim: ts=4 sts=4 fdm=marker com+=l\:\" fdl=0
 doc/histwin.txt	[[[1
-470
+474
 *histwin.txt*	For Vim version 7.3	Last change: 2010 Nov. 18
 
 Author:  Christian Brabandt <cb@256bit.org>
@@ -1510,6 +1514,10 @@ third line of this document.
                                                             *histwin-history*
 6. histwin History
 
+0.25    - fixes issue 2 from github
+	  https://github.com/chrisbra/histwin/issues/2
+	  (When 'splitright' is set, Diffing a previous undo branch
+	  separates the window layout, reported by bootleq, thanks!)
 0.24    - :ID is already defined by visincr plugin
           instead use the command :HistID
 0.23    - Purge Undo history with 'X'

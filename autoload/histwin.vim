@@ -1,8 +1,8 @@
 " histwin.vim - Vim global plugin for browsing the undo tree
 " -------------------------------------------------------------
-" Last Change: Tue, 02 Aug 2011 07:48:56 +0200
+" Last Change: Mon, 15 Aug 2011 10:37:51 +0200
 " Maintainer:  Christian Brabandt <cb@256bit.org>
-" Version:     0.24
+" Version:     0.25
 " Copyright:   (c) 2009, 2010 by Christian Brabandt
 "              The VIM LICENSE applies to histwin.vim 
 "              (see |copyright|) except use "histwin.vim" 

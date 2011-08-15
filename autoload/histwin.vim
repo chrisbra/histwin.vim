@@ -440,6 +440,10 @@ fun! s:DiffUndoBranch()"{{{1
     exe "setl ft=".cur_ft
 	silent w!
 	diffthis
+	" Fix issue 2 for histwin: http://github.com/chrisbra/histwin/issues/2
+	if &splitright
+		wincmd x
+	endif
 	exe bufwinnr(s:orig_buffer) . 'wincmd w'
 	diffthis
 endfun

@@ -1054,9 +1054,9 @@ fun s:PurgeUndoHistory() "{{{1
 	let save.ro = &l:ro
 	let save.ma = &l:ma
 	let save.mod = &l:mod
-	set undolevels=-1
+	setl undolevels=-1 modifiable
 	exe "norm! G$a \<BS>\<Esc>"
-	call delete(undofile(@%))
+	call delete(fnameescape(undofile(@%)))
 
 	for [key, value] in items(save)
 		call setbufvar('', '&' . key, value)

@@ -35,7 +35,8 @@ endif
 " Enable displaying the differences with Signs
 if exists("g:undo_tree_highlight_changes") &&
 			\ g:undo_tree_highlight_changes == 1
-	call histwin#PreviewAuCmd(1)
+	" prevent loading to early!
+	exe "call histwin#PreviewAuCmd(1)"
 endif
 
 " User_Command: {{{2

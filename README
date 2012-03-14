@@ -370,6 +370,9 @@ third line of this document.
                                                             *histwin-history*
 6. histwin History
 
+0.26 (unreleased)
+        - prevent loading of autoload script too early (reported by Sergey
+	  Khorev, thanks!)
 0.25    - fixes issue 2 from github
 	  https://github.com/chrisbra/histwin/issues/2
 	  (When 'splitright' is set, Diffing a previous undo branch

@@ -327,10 +327,10 @@ fun! s:PrintUndoTree(winnr) "{{{1
 			let tag = (empty(tag) ? tag : '/'.tag.'/')
 			if !s:undo_tree_dtl
 				call append('$', 
-				\ printf("%0*d) %8s %6d %4d %1s %s", 
+				\ printf("%0*d) %9s %6d %4d %1s %s", 
 				\ strlen(len(histdict)), i, 
 				\ (s:undo_tree_epoch ?
-				\ localtime() - line['time'] > 24*3600 ? strftime('%b %d',
+				\ localtime() - line['time'] > 24*3600 ? strftime('%d %b %y',
 					\ line['time']) : strftime('%H:%M:%S', line['time']) :
 				\ line['time']),
 				\ line['change'], line['save'], 
@@ -338,10 +338,10 @@ fun! s:PrintUndoTree(winnr) "{{{1
 				\ tag))
 			else
 				call append('$', 
-				\ printf("%0*d) %8s %1s %s", 
+				\ printf("%0*d) %9s %1s %s", 
 				\ strlen(len(histdict)), i,
 				\ (s:undo_tree_epoch ?
-				\ localtime() - line['time'] > 24*3600 ? strftime('%b %d',
+				\ localtime() - line['time'] > 24*3600 ? strftime('%d %b %y',
 				\ line['time']) : strftime('%H:%M:%S', line['time']) :
 				\ line['time']),
 				\ (line['number']<0 ? '!' : (line['save'] ? '*' : ' ')),
@@ -370,8 +370,8 @@ fun! s:HilightLines(changenr)"{{{1
 	syn match UBInfo       '^".*$' contains=UBKEY
 	syn match UBKey        '^"\s\zs\%(\(<[^>]*>\)\|\u\)\ze\s'
 	syn match UBList       '^\d\+\ze' nextgroup=UBDate,UBTime
-	syn match UBDate       '\w\+\s\d\+\ze'
 	syn match UBTime       '\d\d:\d\d:\d\d' "nextgroup=UBDelimStart
+	syn match UBDate       '\d\+\s\S\+\s\d\+\ze'
 	syn region UBTag matchgroup=UBDelim start='/' end='/$' keepend
 	if a:changenr 
 		let search_pattern = '^0*'.a:changenr.')[^/]*'

@@ -370,7 +370,7 @@ third line of this document.
                                                             *histwin-history*
 6. histwin History
 
-0.26 (unreleased)
+0.26 
         - prevent loading of autoload script too early (reported by Sergey
 	  Khorev, thanks!)
 	- apply &fenc setting before writing file for diff (patch by Ben
